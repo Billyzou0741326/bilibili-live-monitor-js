@@ -1,0 +1,25 @@
+{
+  "name": "bilibili-monitor",
+  "version": "1.0.0",
+  "main": "build/main.js",
+  "dependencies": {
+    "chalk": "^3.0.0",
+    "express": "^4.17.1",
+    "follow-redirects": "^1.10.0",
+    "table": "^5.4.6",
+    "ws": "^7.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Billyzou0741326/bilibili-live-monitor-js.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Billyzou0741326/bilibili-live-monitor-js/issues"
+  },
+  "homepage": "https://github.com/Billyzou0741326/bilibili-live-monitor-js#readme",
+  "description": ""
+}
