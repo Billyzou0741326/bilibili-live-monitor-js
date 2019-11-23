@@ -6,6 +6,9 @@ const WebSocket = require('ws');
 const settings = require('../settings.json');
 const { raffleEmitter } = require('../global/config.js');
 
+const cprint = require('../util/printer.js');
+const colors = require('colors');
+
 class Host {
 
     constructor() {
@@ -14,6 +17,14 @@ class Host {
     }
 
     run() {
+        try {
+            this.listen();
+        } catch (error) {
+            cprint(`Failed to setup server: ${error.message}`, colors.red);
+        }
+    }
+
+    listen() {
         const ws = new WebSocket.Server({
             'host': this.host, 
             'port': this.port, 
@@ -80,7 +91,11 @@ class Host {
         });
 
         ws.on('error', (error) => {
-            ws.close(1006, 'Error');
+            ws.close(() => {
+                cprint(`Error: ${error.message}`, colors.red);
+                cprint('未能建立服务器 - 可能原因: 接口已被占用', colors.red);
+                cprint('建议修改``settings.json``中的port值', colors.red);
+            });
         });
 
         ws.on('close', () => {});

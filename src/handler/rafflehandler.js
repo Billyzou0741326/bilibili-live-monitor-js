@@ -14,6 +14,10 @@ class RaffleHandler {
     }
 
     run() {
+        this.listen();
+    }
+
+    listen() {
         if (this.installed === false && this.emitter) {
             this.installed = true;
 
@@ -21,7 +25,8 @@ class RaffleHandler {
                 cprint(
                     `${guard['id'].toString().padEnd(11)}`
                     + `@${guard['roomid'].toString().padEnd(11)}`
-                    + `${guard['type']}`, 
+                    + `${guard['type'].padEnd(11)}`
+                    + `${guard['name']}`, 
                     colors.cyan
                 );
             });
@@ -30,7 +35,8 @@ class RaffleHandler {
                 cprint(
                     `${gift['id'].toString().padEnd(11)}`
                     + `@${gift['roomid'].toString().padEnd(11)}`
-                    + `${gift['type']}`, 
+                    + `${gift['type'].padEnd(11)}`
+                    + `${gift['name']}`, 
                     colors.cyan
                 );
             });

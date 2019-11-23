@@ -3,7 +3,8 @@
 function StrToUTF8Array(str) {
     var out = [], p = 0;
 
-    for (var i = 0; i < str.length; i++) {
+    var len = str.length;
+    for (var i = 0; i < len; i++) {
         var c = str.charCodeAt(i);
         if (c < 128) {
             out[p++] = c;

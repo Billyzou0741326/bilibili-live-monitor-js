@@ -4,6 +4,8 @@
  *  execute. This is where happens-before
  *  relationships are established
  */
+process.env.UV_THREAD_POOL_SIZE = 48;
+
 const colors = require('colors');
 
 const {
@@ -12,6 +14,7 @@ const {
     RaffleController, GuardController } = require('./danmu/controller.js');
 const RoomidHandler = require('./handler/roomidhandler.js');    // 弹幕监听播报高能房间号
 const RaffleHandler = require('./handler/rafflehandler.js');    // 高能监听播报抽奖数据
+const config = require('./global/config.js');
 const cprint = require('./util/printer.js');
 const Server = require('./server/host.js');
 
@@ -42,7 +45,15 @@ const raise_nofile_limit = () => {
     let raffleHandler = new RaffleHandler();
     let roomidHandler = new RoomidHandler();
     let guardController = new GuardController(limit);
+    let raffleController = new RaffleController();
     let server = new Server();
+
+    if (process.argv.includes('-v')) {
+        config.verbose = true;
+    }
+    if (process.argv.includes('--debug')) {
+        config.debug = true;
+    }
 
     cprint('bilibili-monitor[1.0.0] successfully launched', colors.green);
 
