@@ -13,6 +13,7 @@ const {
 const RoomidHandler = require('./handler/roomidhandler.js');    // 弹幕监听播报高能房间号
 const RaffleHandler = require('./handler/rafflehandler.js');    // 高能监听播报抽奖数据
 const cprint = require('./util/printer.js');
+const Server = require('./server/host.js');
 
 const raise_nofile_limit = () => {
     let limit = null;
@@ -41,7 +42,11 @@ const raise_nofile_limit = () => {
     let raffleHandler = new RaffleHandler();
     let roomidHandler = new RoomidHandler();
     let guardController = new GuardController(limit);
+    let server = new Server();
 
+    cprint('bilibili-monitor[1.0.0] successfully launched', colors.green);
+
+    server.run();
     guardController.run();
     raffleHandler.run();
     roomidHandler.run();

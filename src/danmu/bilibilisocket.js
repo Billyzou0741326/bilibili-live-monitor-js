@@ -67,8 +67,8 @@ class BilibiliSocket {
                 this.buffers = [
                     this.buffers[0].slice(this.totalLength, this.buffers[0].length) ];
                 this.position -= this.totalLength;
-                if (this.position === 0) {
-                    this.totalLength = 0;
+                if (this.position === 0 || this.buffers[0].length === 0) {
+                    this.totalLength = this.position = 0;
                     this.buffers = [];
                 } else {
                     this.totalLength = this.buffers[0].readUInt32BE(0);
