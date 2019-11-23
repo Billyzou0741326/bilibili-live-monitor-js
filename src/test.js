@@ -5,7 +5,7 @@ const posix = require('posix');
 
 const Bilibili = require('./bilibili.js');
 const RoomidHandler = require('./handler/roomidhandler.js');
-const { RaffleMonitor } = require('./danmu/bilibilisocket.js');
+const { RaffleMonitor, GuardMonitor } = require('./danmu/bilibilisocket.js');
 const { GuardController } = require('./danmu/controller.js');
 const cprint = require('./util/printer.js');
 
@@ -35,8 +35,16 @@ setTimeout(() => { guardCenter.close(); }, 30 * 1000);
 // const roomidHandler = new RoomidHandler();
 // Bilibili.getRaffleInRoom(6136246, roomidHandler.handleMessage);
 
+Bilibili.getLiveCount((count) => {
+    cprint(count, colors.green);
+});
+
+let guardMonitor = new GuardMonitor(7685334, 0);
+guardMonitor.run();
+
+
 /**
-Bilibili.getRoomsInArea(0).then((room_waiter) => {
+Bilibili.getRoomsInArea(1, 5).then((room_waiter) => {
 
     Promise.all(room_waiter).then((room_vector) => {
 
@@ -56,6 +64,3 @@ Bilibili.getRoomsInArea(0).then((room_waiter) => {
 
 
 
-Bilibili.getLiveCount((count) => {
-    cprint(count, colors.green);
-});

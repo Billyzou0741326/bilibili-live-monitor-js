@@ -1,0 +1,22 @@
+{
+  "name": "bilibili-monitor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "colors": "^1.4.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Billyzou0741326/bilibili-live-raffle-monitor-stable.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Billyzou0741326/bilibili-live-raffle-monitor-stable/issues"
+  },
+  "homepage": "https://github.com/Billyzou0741326/bilibili-live-raffle-monitor-stable#readme"
+}

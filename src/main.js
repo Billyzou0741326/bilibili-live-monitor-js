@@ -5,7 +5,6 @@
  *  relationships are established
  */
 const colors = require('colors');
-const posix = require('posix');
 
 const {
     RaffleMonitor, GuardMonitor } = require('./danmu/bilibilisocket.js');
@@ -16,16 +15,21 @@ const RaffleHandler = require('./handler/rafflehandler.js');    // 高能监听�
 const cprint = require('./util/printer.js');
 
 const raise_nofile_limit = () => {
-    // 提升Linux系统nofile上限 (连接数)     
-    // 系统层面调整上限(Linux): /etc/security/limits.conf
     let limit = null;
 
-    if (process.platform === 'linux') {
-        const hard_limit = posix.getrlimit('nofile')['hard'];
-        limit = hard_limit;
-        posix.setrlimit('nofile', { 'soft': hard_limit });
-        cprint(`Unix nofile 上限调整至极限: ${hard_limit}`, colors.green);
-    }
+    try {
+
+        // 提升Linux系统nofile上限 (连接数量)     
+        // 系统层面调整上限(Linux): /etc/security/limits.conf
+        if (process.platform === 'linux') {
+            const posix = require('posix');
+            const hard_limit = posix.getrlimit('nofile')['hard'];
+            limit = hard_limit;
+            posix.setrlimit('nofile', { 'soft': hard_limit });
+            cprint(`Unix nofile 上限调整至极限: ${hard_limit}`, colors.green);
+        }
+    
+    } catch (error) {}
 
     return limit;
 };

@@ -4,7 +4,7 @@ const colors = require('colors/safe');
 
 const { roomidEmitter, raffleEmitter } = require('../global/config.js');
 const Bilibili = require('../bilibili.js');
-const verbose = require('../global/config.js');
+const verbose = require('../global/config.js').verbose;
 const cprint = require('../util/printer.js');
 
 class RoomidHandler {
@@ -31,11 +31,6 @@ class RoomidHandler {
         let guards = data['data']['guard'];
         let gifts = data['data']['gift'];
 
-        if (verbose === true) {
-            cprint(guards, colors.cyan);
-            cprint(gifts, colors.cyan);
-        }
-
         // Use setTimeout to wait for cool down
         guards = guards.map(g => {
             return {
@@ -60,8 +55,6 @@ class RoomidHandler {
 
         guards.forEach((g) => {
             raffleEmitter.emit('guard', g['gift_data']);
-            if (verbose === true)
-                cprint(g, colors.cyan);
         });
 
         gifts.forEach((g) => {
@@ -69,8 +62,6 @@ class RoomidHandler {
             cool_down = cool_down > 0 ? cool_down : 0;
             setTimeout(() => {
                 raffleEmitter.emit('gift', g['gift_data']);
-                if (verbose === true)
-                    cprint(g, colors.cyan);
             }, cool_down * 1000);
         });
     }
