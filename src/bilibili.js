@@ -80,7 +80,7 @@ class Bilibili {
     static getRoomsInArea(areaid, size=99) {
         const url = 'api.live.bilibili.com';
         const path = '/room/v3/area/getRoomList';
-        const page_size = 99;
+        const page_size = size;
         const params = {
             'parent_area_id': areaid, 
             'page': 0, 
