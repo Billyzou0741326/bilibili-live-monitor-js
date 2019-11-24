@@ -36,6 +36,7 @@ const Server = require('./server/host.js');
 
         server.run();
         guardController.run();
+        raffleController.run();
         raffleHandler.run();
         roomidHandler.run();
     })();
