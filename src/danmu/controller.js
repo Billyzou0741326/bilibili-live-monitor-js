@@ -79,6 +79,14 @@ class RaffleController {
         this.scheduledCheck = null;
         this.connections = new Map();  // areaid: dmlistener
         this.limit = limit;
+        this.areaname = {
+            '1': '娱乐', 
+            '2': '网游', 
+            '3': '手游', 
+            '4': '绘画', 
+            '5': '电台', 
+            '6': '单机', 
+        };
     }
 
     run() {
@@ -111,20 +119,44 @@ class RaffleController {
             Bilibili.isLive(roomid).then((streaming) => {
                 if (streaming && !this.connections.has(areaid)) {
 
-                    cprint(`Setting up monitor in area ${areaid}`, colors.green);
                     let dmlistener = new RaffleMonitor(roomid, 0, areaid);
                     this.connections.set(areaid, dmlistener);
-                    cprint(`Setting up monitor @room ${roomid} in ${areaid}`, colors.green);
+
+                    let msg = `Setting up monitor @room ${roomid.toString().padEnd(11)}`
+                            + `in ${this.areaname[areaid]}区`;
+                    cprint(msg, colors.green);
                     dmlistener.run().then((switchRoom) => {
-                        cprint(`@room ${roomid} in ${areaid} is closed.`, colors.yellow);
                         if (switchRoom) {
                             // TODO
+                            cprint(`@room ${roomid} in ${this.areaname[areaid]}区 is closed.`, colors.yellow);
+                            this.connections.delete(areaid);
+                            this.recoverArea(areaid);
                         }
                     });
                 }
-            }).catch((errorMsg) => {
+            }).catch((error) => {
                 cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
             });
+        });
+    }
+
+    recoverArea(areaid) {
+        Bilibili.getRoomsInArea(areaid, 10).then((promises) => {
+            promises.forEach((promise) => {
+
+                promise.then((room_list) => {
+                    room_list = room_list.map((roomInfo) => {
+                        const roomid = roomInfo['roomid'];
+                        return roomid;
+                    });
+                    this.setupRaffleMonitorInArea(areaid, room_list);
+                }).catch((error) => {
+                    cprint(`${Bilibili.getRoomsInArea.name} - ${error}`, colors.red);
+                });
+
+            });
+        }).catch((error) => {
+            cprint(`${Bilibili.getRoomsInArea.name} - ${error}`, colors.red);
         });
     }
 
