@@ -5,6 +5,7 @@ const net = require('net');
 const UTF8ArrayToStr = require('../util/conversion.js').UTF8ArrayToStr;
 const StrToUTF8Array = require('../util/conversion.js').StrToUTF8Array;
 const roomidEmitter = require('../global/config.js').roomidEmitter;
+const Bilibili = require('../bilibili.js');
 const config = require('../global/config.js');
 const wsUri = require('../global/config.js').wsUri;
 const cprint = require('../util/printer.js');
@@ -206,6 +207,18 @@ class GuardMonitor extends BilibiliSocket {
 
     constructor(roomid, uid) {
         super(roomid, uid);
+    }
+
+    onPreparing(msg) {
+
+        Bilibili.isLive(this.roomid).then((streaming) => {
+            if (streaming === false) {
+                super.close();
+            }
+        }).catch((error) => {
+            cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
+        });
+
     }
 
     onNoticeMsg(msg) {

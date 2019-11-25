@@ -52,7 +52,10 @@ class GuardController {
                         const roomid = roomInfo['roomid'];
                         const online = roomInfo['online'];
 
-                        if (online > 50 && this.connections.has(roomid) === false) {
+                        if (online > 50 
+                                && this.connections.has(roomid) === false
+                                && this.recentlyClosed.includes(roomid) === false) {
+
                             let dmlistener = new GuardMonitor(roomid, 0);
                             this.connections.set(roomid, dmlistener);
                             dmlistener.run().then((roomid) => {
