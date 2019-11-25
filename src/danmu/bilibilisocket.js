@@ -70,7 +70,8 @@ class BilibiliSocket {
     onData(buffer) {
         this.lastRead = +new Date() / 1000;
         this.buffer = Buffer.concat([ this.buffer, buffer ]);
-        this.totalLength = this.buffer.readUInt32BE(0);
+        if (this.totalLength <= 0)
+            this.totalLength = this.buffer.readUInt32BE(0);
         if (config.debug === true)
             cprint(`BufferSize ${this.buffer.length} Length ${this.totalLength}`, colors.green);
         while (this.totalLength > 0 && this.buffer.length >= this.totalLength) {
@@ -88,14 +89,14 @@ class BilibiliSocket {
                 if (config.debug === true)
                     cprint(`BufferSize ${this.buffer.length} Length ${this.totalLength}`, colors.green);
             } catch (error) {
-                cprint(`Error: ${error.message}`, colors.red);
-                cprint('[ 修正 ] TCP连接重启', colors.green);
+                cprint(`Error: ${error.message} @room ${this.roomid}`, colors.red);
                 this.heartbeatTask && clearInterval(this.heartbeatTask);
                 this.heartbeatTask = null;
                 this.socket && this.socket.unref().end().destroy();
                 this.socket = null;
                 this.healthCheck && clearInterval(this.healthCheck);
                 this.healthCheck = null;
+                cprint(`[ 修正 ] TCP连接重启 @room ${this.roomid}`, colors.green);
                 return;
             }
         }
@@ -115,9 +116,11 @@ class BilibiliSocket {
                 this.processMsg(msg);
                 break;
             case 8:
-                this.heartbeatTask = setInterval(() => {
-                    this.socket && this.socket.write(this.heartbeat);
-                }, 30 * 1000);
+                if (this.heartbeatTask === null) {
+                    this.heartbeatTask = setInterval(() => {
+                        this.socket && this.socket.write(this.heartbeat);
+                    }, 30 * 1000);
+                }
                 break;
         }
     }
