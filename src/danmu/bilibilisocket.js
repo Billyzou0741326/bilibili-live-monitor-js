@@ -85,6 +85,8 @@ class BilibiliSocket {
                     }
                 } else if (this.buffer.length >= 4) {
                     this.totalLength = this.buffer.readUInt32BE(0);
+                } else {
+                    this.totalLength = -1;
                 }
                 if (config.debug === true)
                     cprint(`BufferSize ${this.buffer.length} Length ${this.totalLength}`, colors.green);
