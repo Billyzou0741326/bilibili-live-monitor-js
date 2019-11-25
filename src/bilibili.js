@@ -27,7 +27,7 @@ class Bilibili {
         const doGet = (promise) => {
             return promise.catch((error) => {
                 if (tries > 0) {
-                    cprint(`Error: ${error}`, colors.red);
+                    cprint(`${error}`, colors.red);
                     cprint(`[ 修正 ${3-tries} ]: 重现request`, colors.green);
                     --tries;
                     return doGet(newRequest());
@@ -79,7 +79,7 @@ class Bilibili {
         const query = querystring.stringify(params);
         const headers = {
             'Cookie': cookies !== null ? cookies : {}, 
-            'Connection': 'keep-alive', 
+            'Connection': 'close', 
         };
         const options = {
             'headers': headers, 
@@ -103,7 +103,7 @@ class Bilibili {
             'page_size': size > 99 || size < 0 ? 99 : size, 
         };
         const headers = {
-            'Connection': 'keep-alive',
+            'Connection': 'close',
         };
 
         let promises = [];
@@ -246,7 +246,7 @@ class Bilibili {
             'room_id': roomid, 
         };
         const headers = {
-            'Connection': 'keep-alive', 
+            'Connection': 'close', 
         };
         const query = querystring.stringify(params);
         const options = {
