@@ -65,7 +65,7 @@ class BilibiliSocket {
     onError(error) {
         (this.socket 
             && this.socket.unref().end().destroy() 
-            && this.socket.destroyed()
+            && this.socket.destroyed
             && (this.socket = null));
         if (config.verbose === true)
             cprint(`@room ${this.roomid} observed an error: ${error.message}`, colors.red);
@@ -101,7 +101,7 @@ class BilibiliSocket {
                 this.heartbeatTask = null;
                 (this.socket 
                     && this.socket.unref().end().destroy(error) 
-                    && this.socket.destroyed()
+                    && this.socket.destroyed
                     && (this.socket = null));
                 this.healthCheck && clearInterval(this.healthCheck);
                 this.healthCheck = null;
@@ -142,7 +142,7 @@ class BilibiliSocket {
         this.heartbeatTask = null;
         (this.socket 
             && this.socket.unref().end().destroy() 
-            && this.socket.destroyed()
+            && this.socket.destroyed
             && (this.socket = null));
         this.healthCheck && clearInterval(this.healthCheck);
         this.healthCheck = null;
@@ -160,7 +160,7 @@ class BilibiliSocket {
         this.heartbeatTask = null;
         (this.socket 
             && this.socket.unref().end().destroy() 
-            && this.socket.destroyed()
+            && this.socket.destroyed
             && (this.socket = null));
         this.healthCheck && clearInterval(this.healthCheck);
         this.healthCheck = null;
