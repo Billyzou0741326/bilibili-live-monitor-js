@@ -52,7 +52,7 @@ class GuardController {
                         const roomid = roomInfo['roomid'];
                         const online = roomInfo['online'];
 
-                        if (online > 50 
+                        if (online > 10 
                                 && this.connections.has(roomid) === false
                                 && this.recentlyClosed.includes(roomid) === false) {
 

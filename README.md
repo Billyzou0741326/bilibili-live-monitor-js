@@ -40,5 +40,5 @@
  5. `node ./src/main.js --debug`     (显示对debug有帮助的信息(自认为) !刷屏警告)
 
 ## Bug report  
-有问题可以来[Issue](https://github.com/Billyzou0741326/bilibili-raffle-monitor/issues)聊天  
+有问题可以来[Issue](https://github.com/Billyzou0741326/bilibili-live-monitor-js/issues)聊天  
 有大问题可以炸我邮箱<zouguanhan@gmail.com>  
