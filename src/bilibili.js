@@ -21,8 +21,22 @@ class Bilibili {
 
     static get(options) {
 
+        let tries = 3;
         options['agent'] = httpsAgent;
-        return new Promise((resolve, reject) => {
+
+        const doGet = (promise) => {
+            return promise.catch((error) => {
+                if (tries > 0) {
+                    cprint(`Error: ${error}`, colors.red);
+                    cprint(`[ 修正 ${3-tries} ]: 重现request`, colors.green);
+                    --tries;
+                    return doGet(newRequest());
+                } else {
+                    throw error;
+                }
+            });
+        };
+        const newRequest = () => new Promise((resolve, reject) => {
 
             https.get(options, (response) => {
 
@@ -52,6 +66,7 @@ class Bilibili {
             });
         });
 
+        return doGet(newRequest());
     }
 
     /** Check for lottery in room ``roomid``
@@ -64,7 +79,7 @@ class Bilibili {
         const query = querystring.stringify(params);
         const headers = {
             'Cookie': cookies !== null ? cookies : {}, 
-            'Connection': 'close', 
+            'Connection': 'keep-alive', 
         };
         const options = {
             'headers': headers, 
@@ -72,7 +87,7 @@ class Bilibili {
             'path': `${path}?${query}`, 
         };
 
-        return rateLimiter.get(options);
+        return Bilibili.get(options);
     }
 
     /** Get streaming entities in area ``areaid``
@@ -87,7 +102,9 @@ class Bilibili {
             'page': 0, 
             'page_size': size > 99 || size < 0 ? 99 : size, 
         };
-        const headers = {};
+        const headers = {
+            'Connection': 'keep-alive',
+        };
 
         let promises = [];
 
@@ -229,7 +246,7 @@ class Bilibili {
             'room_id': roomid, 
         };
         const headers = {
-            'Connection': 'close', 
+            'Connection': 'keep-alive', 
         };
         const query = querystring.stringify(params);
         const options = {
