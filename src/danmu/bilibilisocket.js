@@ -63,11 +63,16 @@ class BilibiliSocket {
     }
 
     onError(error) {
+        (this.socket 
+            && this.socket.unref().end().destroy() 
+            && this.socket.destroyed()
+            && (this.socket = null));
         if (config.verbose === true)
             cprint(`@room ${this.roomid} observed an error: ${error.message}`, colors.red);
     }
 
     onData(buffer) {
+        if (this.socket === null) return;
         this.lastRead = +new Date() / 1000;
         this.buffer = Buffer.concat([ this.buffer, buffer ]);
         if (this.totalLength <= 0)
@@ -94,8 +99,10 @@ class BilibiliSocket {
                 cprint(`Error: ${error.message} @room ${this.roomid}`, colors.red);
                 this.heartbeatTask && clearInterval(this.heartbeatTask);
                 this.heartbeatTask = null;
-                this.socket && this.socket.unref().end().destroy();
-                this.socket = null;
+                (this.socket 
+                    && this.socket.unref().end().destroy(error) 
+                    && this.socket.destroyed()
+                    && (this.socket = null));
                 this.healthCheck && clearInterval(this.healthCheck);
                 this.healthCheck = null;
                 cprint(`[ 修正 ] TCP连接重启 @room ${this.roomid}`, colors.green);
@@ -133,8 +140,10 @@ class BilibiliSocket {
             cprint(`@room ${this.roomid} lost connection.`, color);
         this.heartbeatTask && clearInterval(this.heartbeatTask);
         this.heartbeatTask = null;
-        this.socket && this.socket.unref().end().destroy();
-        this.socket = null;
+        (this.socket 
+            && this.socket.unref().end().destroy() 
+            && this.socket.destroyed()
+            && (this.socket = null));
         this.healthCheck && clearInterval(this.healthCheck);
         this.healthCheck = null;
         if (this.closed_by_user === false) {
@@ -149,8 +158,10 @@ class BilibiliSocket {
         this.closed_by_user = closed_by_us;
         this.heartbeatTask && clearInterval(this.heartbeatTask);
         this.heartbeatTask = null;
-        this.socket && this.socket.unref().end().destroy();
-        this.socket = null;
+        (this.socket 
+            && this.socket.unref().end().destroy() 
+            && this.socket.destroyed()
+            && (this.socket = null));
         this.healthCheck && clearInterval(this.healthCheck);
         this.healthCheck = null;
     }
