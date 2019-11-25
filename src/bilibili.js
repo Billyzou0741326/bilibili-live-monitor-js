@@ -5,8 +5,8 @@ const colors = require('colors/safe');
 const https = require('https');
 const querystring = require('querystring');
 const cprint = require('./util/printer.js');
+const RateLimiter = require('./util/ratelimiter.js');
 
-// TODO: Recover from json parse error
 const httpsAgent = (() => {
     const options = {
         'keepAlive': true, 
@@ -14,6 +14,7 @@ const httpsAgent = (() => {
     };
     return new https.Agent(options);
 })();
+
 
 /** Emits requests to the bilibili API */
 class Bilibili {
@@ -71,7 +72,7 @@ class Bilibili {
             'path': `${path}?${query}`, 
         };
 
-        return Bilibili.get(options);
+        return rateLimiter.get(options);
     }
 
     /** Get streaming entities in area ``areaid``
@@ -84,7 +85,7 @@ class Bilibili {
         const params = {
             'parent_area_id': areaid, 
             'page': 0, 
-            'page_size': size > 99 || size < 0 ? size : 99, 
+            'page_size': size > 99 || size < 0 ? 99 : size, 
         };
         const headers = {};
 
@@ -95,7 +96,7 @@ class Bilibili {
             Bilibili.getLiveCount().then((room_count) => {
 
                 const page = Number.parseInt(room_count / page_size) + 1;
-                let i = 0;
+                let i = 1;
                 
                 while (i < page) {
                     params.page = i;
@@ -109,48 +110,22 @@ class Bilibili {
 
                     promises.push(new Promise((resolve, reject) => {
 
-                        setTimeout(() => {
-
-                            https.get(options, (response) => {
-
-                                response.on('error', (error) => {
-                                    reject(`Error: ${error.message}`);
+                        rateLimiter.get(options).then((jsonObj) => {
+                            if (jsonObj['code'] !== 0) {
+                                reject(`Error: API code ${jsonObj['code']}`);
+                            } else {
+                                const rooms_info = jsonObj['data']['list'].map(entry => { 
+                                    return {
+                                        'roomid': entry['roomid'], 
+                                        'online': entry['online'], 
+                                    };
                                 });
+                                resolve(rooms_info);
+                            }
+                        }).catch((error) => {
+                            reject(error);
+                        });
 
-                                if (response.statusCode === 200) {
-
-                                    let dataSequence = [];
-                                    response.on('data', (data) => {
-                                        dataSequence.push(data);
-                                    });
-                                    response.on('end', () => {
-                                        const jsonStr = Buffer.concat(dataSequence).toString();
-                                        try {
-                                            const jsonObj = JSON.parse(jsonStr);
-                                            if (jsonObj['code'] !== 0) {
-                                                reject(`Error: API code ${jsonObj['code']}`);
-                                            } else {
-                                                const rooms_info = jsonObj['data']['list'].map(entry => { 
-                                                    return {
-                                                        'roomid': entry['roomid'], 
-                                                        'online': entry['online'] 
-                                                    };
-                                                });
-                                                resolve(rooms_info);
-                                            }
-                                        } catch(error) {
-                                            reject(`Error: ${error.message}`);
-                                        }
-                                    });
-
-                                } else {
-                                    reject(`Error: Response status code ${response.statusCode}`);
-                                }
-
-                            }).on('error', (error) => {
-                                reject(`Error: ${error.message}`);
-                            });
-                        }, i * 500);
                     }));
                     ++i;
                 }
@@ -189,7 +164,7 @@ class Bilibili {
 
         
         return new Promise((resolve, reject) => {
-            Bilibili.get(options).then((jsonObj) => {
+            rateLimiter.get(options).then((jsonObj) => {
                 const count = jsonObj['data']['count'];
                 resolve(count);
             }).catch((error) => {
@@ -211,7 +186,7 @@ class Bilibili {
             'headers': headers, 
         };
 
-        return Bilibili.get(options);
+        return rateLimiter.get(options);
     }
 
     static getRoomsInEachArea() {
@@ -240,7 +215,7 @@ class Bilibili {
                 'headers': headers, 
             };
 
-            promises.push(Bilibili.get(options));
+            promises.push(rateLimiter.get(options));
 
         });
 
@@ -264,7 +239,7 @@ class Bilibili {
         };
 
         return new Promise((resolve, reject) => {
-            Bilibili.get(options).then((jsonObj) => {
+            rateLimiter.get(options).then((jsonObj) => {
                 const isLive = jsonObj['data']['live_status'] === 0 ? false : true;
                 resolve(isLive);
             }).catch((error) => {
@@ -273,6 +248,8 @@ class Bilibili {
         });
     }
 }
+
+const rateLimiter = new RateLimiter(Bilibili);
 
 module.exports = Bilibili;
 
