@@ -36,6 +36,12 @@ class BilibiliSocket {
         this.callbackOnClose = null;
         this.healthCheck = null;
         this.lastRead = 0;
+
+        this.onData = this.onData.bind(this);
+        this.onConnect = this.onConnect.bind(this);
+        this.onMessage = this.onMessage.bind(this);
+        this.onError = this.onError.bind(this);
+        this.onClose = this.onClose.bind(this);
     }
 
     run() {
@@ -43,10 +49,10 @@ class BilibiliSocket {
             'host': this.host, 
             'port': this.port,
         }).setKeepAlive(true); // .setNoDelay(true)
-        this.socket.on('connect', this.onConnect.bind(this));
-        this.socket.on('error', this.onError.bind(this));
-        this.socket.on('data', this.onData.bind(this));
-        this.socket.on('close', this.onClose.bind(this));
+        this.socket.on('connect', this.onConnect);
+        this.socket.on('error', this.onError);
+        this.socket.on('data', this.onData);
+        this.socket.on('close', this.onClose);
         return new Promise((resolve) => {
             this.callbackOnClose = resolve;
         });     // promise resolves when closed by user (not reconnecting)
@@ -72,10 +78,14 @@ class BilibiliSocket {
     }
 
     onData(buffer) {
-        if (this.socket === null) return;
+        if (this.socket === null) {
+            if (config.debug === true) 
+                cprint(`${this.roomid} should be closed, socket is null`, colors.red);
+            return;
+        }
         this.lastRead = +new Date() / 1000;
         this.buffer = Buffer.concat([ this.buffer, buffer ]);
-        if (this.totalLength <= 0)
+        if (this.totalLength <= 0 && this.buffer.length >= 4)
             this.totalLength = this.buffer.readUInt32BE(0);
         if (config.debug === true)
             cprint(`BufferSize ${this.buffer.length} Length ${this.totalLength}`, colors.green);
@@ -97,6 +107,8 @@ class BilibiliSocket {
                     cprint(`BufferSize ${this.buffer.length} Length ${this.totalLength}`, colors.green);
             } catch (error) {
                 cprint(`Error: ${error.message} @room ${this.roomid}`, colors.red);
+                config.debug = false;
+                config.verbose = false;
                 this.heartbeatTask && clearInterval(this.heartbeatTask);
                 this.heartbeatTask = null;
                 (this.socket 
@@ -177,13 +189,13 @@ class BilibiliSocket {
                     cprint(msg['msg_common'], colors.cyan);
                 this.onNoticeMsg(msg);
                 break;
-            case 'DANMU_MSG':
-                break;
             case 'PREPARING':
                 this.onPreparing(msg);
                 break;
             case 'ROOM_CHANGE':
                 this.onRoomChange(msg);
+                break;
+            default:
                 break;
         }
     }
@@ -245,8 +257,6 @@ class GuardMonitor extends BilibiliSocket {
         switch (msg_type) {
             case 3:
                 if (roomid === this.roomid) {
-                    if (config.verbose === true)
-                        cprint(`${this.roomid} - ${msg['msg_common']}`, colors.green);
                     this.emitter && this.emitter.emit('gift', roomid);
                 }
                 break;
@@ -274,8 +284,6 @@ class RaffleMonitor extends BilibiliSocket {
             case 6:
                 // fall through
             case 8:
-                if (config.verbose === true)
-                    cprint(`${this.roomid} - ${msg['msg_common']} - ${msg_type}`, colors.green);
                 this.emitter && this.emitter.emit('gift', roomid);
                 break;
         }
