@@ -44,7 +44,13 @@ class BilibiliSocket {
         this.onClose = this.onClose.bind(this);
     }
 
+    reset() {
+        this.buffer = Buffer.alloc(0);
+        this.totalLength = -1;
+    }
+
     run() {
+        this.reset();
         this.socket = net.createConnection({
             'host': this.host, 
             'port': this.port,
@@ -111,12 +117,12 @@ class BilibiliSocket {
                 config.verbose = false;
                 this.heartbeatTask && clearInterval(this.heartbeatTask);
                 this.heartbeatTask = null;
+                this.healthCheck && clearInterval(this.healthCheck);
+                this.healthCheck = null;
                 (this.socket 
                     && this.socket.unref().end().destroy(error) 
                     && this.socket.destroyed
                     && (this.socket = null));
-                this.healthCheck && clearInterval(this.healthCheck);
-                this.healthCheck = null;
                 cprint(`[ 修正 ] TCP连接重启 @room ${this.roomid}`, colors.green);
                 return;
             }
