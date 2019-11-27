@@ -34,6 +34,11 @@ class Host {
 
         ws.on('connection', (socket) => {
 
+            socket.isAlive = true;
+            socket.on('pong', () => {
+                socket.isAlive = true;
+            });
+
             socket.on('message', (in_message) => {
                 const accepted = Buffer.alloc(16);
                 accepted.writeUInt32BE(16, 0);
@@ -43,49 +48,6 @@ class Host {
                 accepted.writeUInt32BE(1, 12);
                 socket.send(accepted);
 
-                raffleEmitter.on('gift', (gift) => {
-                    const giftStr = JSON.stringify(gift);
-                    const giftData = Buffer.from(giftStr, 'utf8');
-
-                    const header = Buffer.alloc(16);
-                    header.writeUInt32BE(16 + giftData.length, 0);
-                    header.writeUInt16BE(16, 4);
-                    header.writeUInt16BE(1, 6);
-                    header.writeUInt32BE(5, 8);
-                    header.writeUInt32BE(1, 12);
-
-                    const payload = Buffer.concat([ header, giftData ]);
-
-                    ws.clients.forEach((client) => {
-                        if (client.readyState === WebSocket.OPEN) {
-                            client.send(payload, {
-                                'binary': true, 
-                            });
-                        }
-                    });
-                });
-
-                raffleEmitter.on('guard', (guard) => {
-                    const guardStr = JSON.stringify(guard);
-                    const guardData = Buffer.from(guardStr, 'utf8');
-
-                    const header = Buffer.alloc(16);
-                    header.writeUInt32BE(16 + guardData.length, 0);
-                    header.writeUInt16BE(16, 4);
-                    header.writeUInt16BE(1, 6);
-                    header.writeUInt32BE(5, 8);
-                    header.writeUInt32BE(1, 12);
-
-                    const payload = Buffer.concat([ header, guardData ]);
-
-                    ws.clients.forEach((client) => {
-                        if (client.readyState === WebSocket.OPEN) {
-                            client.send(payload, {
-                                'binary': true, 
-                            });
-                        }
-                    });
-                });
             });
 
         });
@@ -99,6 +61,59 @@ class Host {
         });
 
         ws.on('close', () => {});
+
+        const interval = setInterval(() => {
+            ws.clients.forEach((client) => {
+                if (client.isAlive === false) return client.terminate();
+
+                client.isAlive = false;
+                client.ping(() => {});
+            });
+        }, 20 * 1000);
+
+        raffleEmitter.on('gift', (gift) => {
+            const giftStr = JSON.stringify(gift);
+            const giftData = Buffer.from(giftStr, 'utf8');
+
+            const header = Buffer.alloc(16);
+            header.writeUInt32BE(16 + giftData.length, 0);
+            header.writeUInt16BE(16, 4);
+            header.writeUInt16BE(1, 6);
+            header.writeUInt32BE(5, 8);
+            header.writeUInt32BE(1, 12);
+
+            const payload = Buffer.concat([ header, giftData ]);
+
+            ws.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(payload, {
+                        'binary': true, 
+                    });
+                }
+            });
+        });
+
+        raffleEmitter.on('guard', (guard) => {
+            const guardStr = JSON.stringify(guard);
+            const guardData = Buffer.from(guardStr, 'utf8');
+
+            const header = Buffer.alloc(16);
+            header.writeUInt32BE(16 + guardData.length, 0);
+            header.writeUInt16BE(16, 4);
+            header.writeUInt16BE(1, 6);
+            header.writeUInt32BE(5, 8);
+            header.writeUInt32BE(1, 12);
+
+            const payload = Buffer.concat([ header, guardData ]);
+
+            ws.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(payload, {
+                        'binary': true, 
+                    });
+                }
+            });
+        });
     }
 }
 
