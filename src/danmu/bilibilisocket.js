@@ -75,10 +75,7 @@ class BilibiliSocket {
     }
 
     onError(error) {
-        (this.socket 
-            && this.socket.unref().end().destroy() 
-            && this.socket.destroyed
-            && (this.socket = null));
+        this.close(false);
         if (config.verbose === true)
             cprint(`@room ${this.roomid} observed an error: ${error.message}`, colors.red);
     }
@@ -115,14 +112,7 @@ class BilibiliSocket {
                 cprint(`Error: ${error.message} @room ${this.roomid}`, colors.red);
                 config.debug = false;
                 config.verbose = false;
-                this.heartbeatTask && clearInterval(this.heartbeatTask);
-                this.heartbeatTask = null;
-                this.healthCheck && clearInterval(this.healthCheck);
-                this.healthCheck = null;
-                (this.socket 
-                    && this.socket.unref().end().destroy(error) 
-                    && this.socket.destroyed
-                    && (this.socket = null));
+                this.close(false);
                 cprint(`[ 修正 ] TCP连接重启 @room ${this.roomid}`, colors.green);
                 return;
             }
