@@ -36,6 +36,10 @@ class GuardController {
     setupGuardMonitor() {
         const GLOBAL = 0;
 
+        if (this.limit && this.connections.size > this.limit - 100) {
+            return;
+        }
+
         if (this.recentlyClosed > 150) {
             this.recentlyClosed.splice(150, this.recentlyClosed.length - 150);
         }
