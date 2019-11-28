@@ -33,11 +33,15 @@
  - 运行环境[node.js](https://nodejs.org/en/download/)
 
 ### Execution (运行方式)  
+运行方式 (1) - 推荐
  1. 命令行切换到package.json所在的目录
- 2. `npm install`
+ 2. `npm install`                    (执行一次就好)
  3. `node ./src/main.js`             (正常运行)
  4. `node ./src/main.js -v`          (显示更多信息 !刷屏警告)
  5. `node ./src/main.js --debug`     (显示对debug有帮助的信息(自认为) !刷屏警告)
+
+运行方式 (2) - 不会用命令行可以用这种方法
+ 1. 右键`run.ps1`, 用powershell运行
 
 ## Bug report  
 有问题可以来[Issue](https://github.com/Billyzou0741326/bilibili-live-monitor-js/issues)聊天  
