@@ -270,14 +270,8 @@ class GuardMonitor extends BilibiliSocket {
 
     onPopularity(popularity) {
         if (popularity <= 1) {
-            Bilibili.isLive(this.roomid).then(streaming => {
-                if (streaming === false) {
-                    ++this.offTimes;
-                    if (this.offTimes > 3) super.close();
-                }
-            }).catch(error => {
-                cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
-            });
+            ++this.offTimes;
+            if (this.offTimes > 10) super.close();
         } else {
             this.offTimes = 0;
         }
