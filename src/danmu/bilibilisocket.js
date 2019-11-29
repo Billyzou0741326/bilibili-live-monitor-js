@@ -127,7 +127,7 @@ class BilibiliSocket {
         let jsonStr = '';
         let msg = null;
         switch (cmd) {
-            case 2:
+            case 3:
                 const popularity = buffer.readUInt32BE(headerLength);
                 this.onPopularity(popularity);
                 break;
@@ -238,6 +238,7 @@ class GuardMonitor extends BilibiliSocket {
 
     constructor(roomid, uid) {
         super(roomid, uid);
+        this.offTimes = 0;
         this.qualified = false;
     }
 
@@ -271,11 +272,14 @@ class GuardMonitor extends BilibiliSocket {
         if (popularity <= 1) {
             Bilibili.isLive(this.roomid).then(streaming => {
                 if (streaming === false) {
-                    super.close();
+                    ++this.offTimes;
+                    if (this.offTimes > 3) super.close();
                 }
             }).catch(error => {
                 cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
             });
+        } else {
+            this.offTimes = 0;
         }
     }
 
