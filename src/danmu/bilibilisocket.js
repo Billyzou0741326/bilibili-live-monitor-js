@@ -127,6 +127,10 @@ class BilibiliSocket {
         let jsonStr = '';
         let msg = null;
         switch (cmd) {
+            case 3:
+                const popularity = buffer.readUInt32BE(headerLength);
+                this.onPopularity(popularity);
+                break;
             case 5:
                 jsonStr = buffer.toString('utf8', headerLength, totalLength);
                 msg = JSON.parse(jsonStr);
@@ -148,12 +152,12 @@ class BilibiliSocket {
             cprint(`@room ${this.roomid} lost connection.`, color);
         this.heartbeatTask && clearInterval(this.heartbeatTask);
         this.heartbeatTask = null;
+        this.healthCheck && clearInterval(this.healthCheck);
+        this.healthCheck = null;
         (this.socket 
             && this.socket.unref().end().destroy() 
             && this.socket.destroyed
             && (this.socket = null));
-        this.healthCheck && clearInterval(this.healthCheck);
-        this.healthCheck = null;
         if (this.closed_by_user === false) {
             this.run();
         } else {
@@ -166,12 +170,12 @@ class BilibiliSocket {
         this.closed_by_user = closed_by_us;
         this.heartbeatTask && clearInterval(this.heartbeatTask);
         this.heartbeatTask = null;
+        this.healthCheck && clearInterval(this.healthCheck);
+        this.healthCheck = null;
         (this.socket 
             && this.socket.unref().end().destroy() 
             && this.socket.destroyed
             && (this.socket = null));
-        this.healthCheck && clearInterval(this.healthCheck);
-        this.healthCheck = null;
     }
 
     processMsg(msg) {
@@ -205,6 +209,9 @@ class BilibiliSocket {
     onRoomChange(msg) {
     }
 
+    onPopularity(popularity) {
+    }
+
     prepareData(cmd, str) {
         const data = StrToUTF8Array(str);
         const headerLength = 16;
@@ -231,6 +238,8 @@ class GuardMonitor extends BilibiliSocket {
 
     constructor(roomid, uid) {
         super(roomid, uid);
+        this.offTimes = 0;
+        this.qualified = false;
     }
 
     onPreparing(msg) {
@@ -256,6 +265,21 @@ class GuardMonitor extends BilibiliSocket {
                     this.emitter && this.emitter.emit('gift', roomid);
                 }
                 break;
+        }
+    }
+
+    onPopularity(popularity) {
+        if (popularity <= 1) {
+            Bilibili.isLive(this.roomid).then(streaming => {
+                if (streaming === false) {
+                    ++this.offTimes;
+                    if (this.offTimes > 3) super.close();
+                }
+            }).catch(error => {
+                cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
+            });
+        } else {
+            this.offTimes = 0;
         }
     }
 
@@ -296,6 +320,18 @@ class RaffleMonitor extends BilibiliSocket {
         const newAreaid = changedInfo['parent_area_id'];
         if (this.areaid !== 0 && this.areaid !== newAreaid) {
             super.close();
+        }
+    }
+
+    onPopularity(popularity) {
+        if (popularity <= 1) {
+            Bilibili.isLive(this.roomid).then(streaming => {
+                if (streaming === false) {
+                    super.close();
+                }
+            }).catch(error => {
+                cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
+            });
         }
     }
 
