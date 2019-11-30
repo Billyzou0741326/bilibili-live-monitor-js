@@ -93,7 +93,7 @@ class Bilibili {
     /** Get streaming entities in area ``areaid``
      *
      */
-    static getRoomsInArea(areaid, size=99) {
+    static getRoomsInArea(areaid, size=99, count=Infinity) {
         const url = 'api.live.bilibili.com';
         const path = '/room/v3/area/getRoomList';
         const page_size = size;
@@ -101,6 +101,7 @@ class Bilibili {
             'parent_area_id': areaid, 
             'page': 0, 
             'page_size': size > 99 || size < 0 ? 99 : size, 
+            'sort_type': 'online',
         };
         const headers = {
             'Connection': 'close',
@@ -112,7 +113,8 @@ class Bilibili {
 
             Bilibili.getLiveCount().then((room_count) => {
 
-                const page = Number.parseInt(room_count / page_size) + 1;
+                room_count = Math.min(count, room_count);
+                const page = Number.parseInt(Math.round(room_count / page_size)) + 1;
                 let i = 1;
                 
                 while (i < page) {
@@ -241,9 +243,9 @@ class Bilibili {
 
     static isLive(roomid) {
         const url = 'api.live.bilibili.com';
-        const path = '/room/v1/Room/get_info';
+        const path = '/room/v1/Room/room_init';
         const params = {
-            'room_id': roomid, 
+            'id': roomid, 
         };
         const headers = {
             'Connection': 'close', 
@@ -257,7 +259,7 @@ class Bilibili {
 
         return new Promise((resolve, reject) => {
             rateLimiter.get(options).then((jsonObj) => {
-                const isLive = jsonObj['data']['live_status'] === 0 ? false : true;
+                const isLive = jsonObj['data']['live_status'] === 1 ? true : false;
                 resolve(isLive);
             }).catch((error) => {
                 reject(error);

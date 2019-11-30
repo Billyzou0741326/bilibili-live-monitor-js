@@ -26,6 +26,8 @@ class BilibiliSocket {
         this.handshake = this.prepareData(7, JSON.stringify({
             'roomid': this.roomid, 
             'uid': this.uid, 
+            'platform': 'web',
+            'clientver': '1.8.12',
         }));
         this.heartbeat = this.prepareData(2, '');
         this.heartbeatTask = null;
@@ -260,6 +262,8 @@ class GuardMonitor extends BilibiliSocket {
         const roomid = msg['real_roomid'];
         
         switch (msg_type) {
+            case 2:
+                // fall through
             case 3:
                 if (roomid === this.roomid) {
                     this.emitter && this.emitter.emit('gift', roomid);
