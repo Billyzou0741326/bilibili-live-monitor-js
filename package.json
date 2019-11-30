@@ -1,7 +1,7 @@
 {
   "name": "bilibili-monitor",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "src/main.js",
   "dependencies": {
     "colors": "^1.4.0",
     "posix": "^4.1.2",
