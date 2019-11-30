@@ -21,7 +21,7 @@ class GuardController {
         this.scheduledCheck = setInterval(() => {
             this.setupGuardMonitor();
             cprint(`Monitoring ${this.connections.size} rooms`, colors.green);
-        }, 30 * 1000);
+        }, 120 * 1000);
     }
 
     close() {
@@ -40,7 +40,7 @@ class GuardController {
             return;
         }
 
-        if (this.recentlyClosed > 150) {
+        if (this.recentlyClosed > 30) {
             this.recentlyClosed.splice(150, this.recentlyClosed.length - 150);
         }
 
@@ -109,10 +109,11 @@ class RaffleController {
             promise.then((jsonObj) => {
 
                 const entries = jsonObj['data']['list'];
+                const areaid = entries[0]['parent_id'] || areas[index];
                 const roomids = entries.map((entry) => {
                     return entry['roomid'];
                 });
-                this.setupRaffleMonitorInArea(areas[index], roomids);
+                this.setupRaffleMonitorInArea(areaid, roomids);
 
             }).catch((errorMsg) => {
                 cprint(`${Bilibili.getRoomsInEachArea.name} - ${error}`, colors.red);
@@ -148,7 +149,7 @@ class RaffleController {
     }
 
     recoverArea(areaid) {
-        Bilibili.getRoomsInArea(areaid, 10).then((promises) => {
+        Bilibili.getRoomsInArea(areaid, 10, 10).then((promises) => {
             promises.forEach((promise) => {
 
                 promise.then((room_list) => {
