@@ -1,9 +1,9 @@
-# bilibili-live-monitor  
+# bilibili-live-monitor (b站舰长、抽奖监听) 
 ![Github](https://img.shields.io/github/license/Billyzou0741326/bilibili-live-raffle-monitor)
 ![Github](https://img.shields.io/badge/nodejs-8.6.1-blue)
 
 ## Info
- - 运行于本地localhost的JS舰长监听
+ - 运行于本地localhost的JS版b站舰长监听
  - 此程序无需用户提供账号信息 且不收集任何数据  
  - [bilibili-raffle](https://github.com/Billyzou0741326/bilibili-raffle)为此项目的client
  - 覆盖率: null (未统计)
@@ -31,6 +31,9 @@
 
 ### Requirements  
  - 运行环境[node.js](https://nodejs.org/en/download/)
+ 
+### Docker
+docker run --publish 8999:8999 <image-name>
 
 ### Execution (运行方式)  
 运行方式 (1) - 推荐
