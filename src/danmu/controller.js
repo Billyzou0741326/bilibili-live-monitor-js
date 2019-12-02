@@ -2,6 +2,7 @@
 
 const colors = require('colors/safe');
 
+const config = require('../global/config.js');
 const cprint = require('../util/printer.js');
 const Bilibili = require('../bilibili.js');
 const {
@@ -56,7 +57,7 @@ class GuardController {
                         const roomid = roomInfo['roomid'];
                         const online = roomInfo['online'];
 
-                        if (online > 10 
+                        if (online > 50 
                                 && this.connections.has(roomid) === false
                                 && this.recentlyClosed.includes(roomid) === false) {
 

@@ -92,6 +92,16 @@ class BilibiliSocket {
         this.buffer = Buffer.concat([ this.buffer, buffer ]);
         if (this.totalLength <= 0 && this.buffer.length >= 4)
             this.totalLength = this.buffer.readUInt32BE(0);
+        if (this.totalLength > 100000) {
+            ++config.error['count'];
+            if (config.error['count'] > 100) {
+                cprint(`Fatal Error: 错误次数超过100 (${config.error['count']})`, colors.red);
+                cprint(`Fatal Error: b站服务器拒绝连接`, colors.red);
+                cprint(`程序终止`, colors.red);
+                process.exit(1);
+            }
+            this.close();
+        }
         if (config.debug === true)
             cprint(`BufferSize ${this.buffer.length} Length ${this.totalLength}`, colors.green);
         while (this.totalLength > 0 && this.buffer.length >= this.totalLength) {

@@ -5,7 +5,7 @@ const EventEmitter = require('events').EventEmitter;
 
 
 const wsUri = {
-    'host': 'tx-live-dmcmt-sv-01.chat.bilibili.com', 
+    'host': 'broadcastlv.chat.bilibili.com', 
     'port': 2243, 
 };
 
@@ -20,6 +20,10 @@ const raffleEmitter = new EventEmitter();
 const verbose = false;
 const debug = false;
 
+const error = {
+    'count': 0,
+};
+
 module.exports = {
     wsUri, 
     server, 
@@ -27,4 +31,5 @@ module.exports = {
     raffleEmitter, 
     verbose, 
     debug, 
+    error,
 };
