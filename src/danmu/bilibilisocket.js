@@ -1,6 +1,7 @@
 'use strict';
 
 const net = require('net');
+const EventEmitter = require('events').EventEmitter;
 
 const UTF8ArrayToStr = require('../util/conversion.js').UTF8ArrayToStr;
 const StrToUTF8Array = require('../util/conversion.js').StrToUTF8Array;
@@ -11,9 +12,11 @@ const wsUri = require('../global/config.js').wsUri;
 const cprint = require('../util/printer.js');
 const colors = require('colors/safe');
 
-class BilibiliSocket {
+class BilibiliSocket extends EventEmitter {
 
     constructor(roomid, uid) {
+        super();
+
         this.host = wsUri.host;
         this.port = wsUri.port;
 
@@ -35,7 +38,6 @@ class BilibiliSocket {
         this.buffer = Buffer.alloc(0);
         this.totalLength = -1;
 
-        this.callbackOnClose = null;
         this.healthCheck = null;
         this.lastRead = 0;
 
@@ -61,9 +63,6 @@ class BilibiliSocket {
         this.socket.on('error', this.onError);
         this.socket.on('data', this.onData);
         this.socket.on('close', this.onClose);
-        return new Promise((resolve) => {
-            this.callbackOnClose = resolve;
-        });     // promise resolves when closed by user (not reconnecting)
     }
 
     onConnect() {
@@ -173,8 +172,7 @@ class BilibiliSocket {
         if (this.closed_by_user === false) {
             this.run();
         } else {
-            this.callbackOnClose && this.callbackOnClose(this.roomid);
-            this.callbackOnClose = null;
+            this.emit('close');
         }
     }
 
