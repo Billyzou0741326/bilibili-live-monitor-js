@@ -16,6 +16,12 @@ class RoomidHandler {
         this.gift_type = {};
         this.gift_history = new Set();
         this.guard_history = new Set();
+
+        this.queue = [];
+
+        this.checkLoop = setInterval(() => {
+            this.processQueue();
+        }, 5 * 1000);
     }
 
     run() {
@@ -39,13 +45,25 @@ class RoomidHandler {
             this.installed = true;
 
             this.emitter.on('gift', (roomid) => {
-                Bilibili.getRaffleInRoom(roomid).then((result) => {
-                    this.handleMessage(roomid, result);
-                }).catch((error) => {
-                    cprint(`${Bilibili.getRaffleInRoom.name} - ${error}`, colors.red);
-                });
+                this.enqueue(roomid);
             });
         }
+    }
+
+    enqueue(roomid) {
+        this.queue.push(roomid);
+    }
+
+    processQueue() {
+        const queue = Array.from(new Set(this.queue));
+        this.queue = [];
+        queue.forEach((roomid) => {
+            Bilibili.getRaffleInRoom(roomid).then((result) => {
+                this.handleMessage(roomid, result);
+            }).catch((error) => {
+                cprint(`${Bilibili.getRaffleInRoom.name} - ${error}`, colors.red);
+            });
+        });
     }
 
     handleMessage(roomid, data) {
@@ -58,12 +76,12 @@ class RoomidHandler {
             let guard_name = this.guard_type[guard_level] || '未知';
             return {
                 'gift_data': {
-                    'id': g['id'], 
-                    'roomid': roomid, 
-                    'type': g['keyword'], 
+                    'id': g['id'],
+                    'roomid': roomid,
+                    'type': g['keyword'],
                     'name': guard_name,
-                }, 
-                'time_wait': g['time_wait'], 
+                },
+                'time_wait': g['time_wait'],
             };
         });
         gifts = gifts.map(g => {

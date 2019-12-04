@@ -63,10 +63,11 @@ class GuardController {
 
                             let dmlistener = new GuardMonitor(roomid, 0);
                             this.connections.set(roomid, dmlistener);
-                            dmlistener.run().then((roomid) => {
+                            dmlistener.on('close', () => {
                                 this.connections.delete(roomid);
                                 this.recentlyClosed.push(roomid);
                             });
+                            dmlistener.run();
                         }
                     });
                 }).catch((error) => {
@@ -134,14 +135,12 @@ class RaffleController {
                     let msg = `Setting up monitor @room ${roomid.toString().padEnd(11)}`
                             + `in ${this.areaname[areaid]}区`;
                     cprint(msg, colors.green);
-                    dmlistener.run().then((switchRoom) => {
-                        if (switchRoom) {
-                            // TODO
-                            cprint(`@room ${roomid} in ${this.areaname[areaid]}区 is closed.`, colors.yellow);
-                            this.connections.delete(areaid);
-                            this.recoverArea(areaid);
-                        }
+                    dmlistener.on('close', () => {
+                        cprint(`@room ${roomid} in ${this.areaname[areaid]}区 is closed.`, colors.yellow);
+                        this.connections.delete(areaid);
+                        this.recoverArea(areaid);
                     });
+                    dmlistener.run();
                 }
             }).catch((error) => {
                 cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
