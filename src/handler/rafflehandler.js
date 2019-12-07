@@ -8,7 +8,6 @@ const cprint = require('../util/printer.js');
 class RaffleHandler {
 
     constructor() {
-        this.history = new Set();
         this.installed = false;
         this.emitter = emitter;
     }

@@ -102,6 +102,11 @@ class RoomidHandler {
             const id = g['gift_data']['id'];
             if (!this.guard_history.has(id)) {
                 this.guard_history.add(id);
+                if (this.guard_history.size > 1000) {
+                    const len = this.guard_history.size;
+                    this.guard_history = Array.from(this.guard_history).splice(500, len);
+                    this.guard_history = new Set(this.guard_history);
+                }
                 raffleEmitter.emit('guard', g['gift_data']);    // on 'guard'
             }
         });
@@ -112,6 +117,11 @@ class RoomidHandler {
             cool_down = cool_down > 0 ? cool_down : 0;
             if (!this.gift_history.has(id)) {
                 this.gift_history.add(id);
+                if (this.gift_history.size > 400) {
+                    const len = this.gift_history.size;
+                    this.gift_history = Array.from(this.gift_history).splice(300, len);
+                    this.gift_history = new Set(this.gift_history);
+                }
                 setTimeout(() => {
                     raffleEmitter.emit('gift', g['gift_data']); // on 'gift'
                 }, cool_down * 1000);
