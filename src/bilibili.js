@@ -114,7 +114,7 @@ class Bilibili {
             Bilibili.getLiveCount().then((room_count) => {
 
                 room_count = Math.min(count, room_count);
-                const page = Number.parseInt(Math.round(room_count / page_size)) + 1;
+                const page = Number.parseInt(Math.round(room_count / page_size)) + 2;
                 let i = 1;
                 
                 while (i < page) {

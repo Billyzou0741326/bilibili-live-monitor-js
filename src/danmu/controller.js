@@ -38,11 +38,12 @@ class GuardController {
         const GLOBAL = 0;
 
         if (this.limit && this.connections.size > this.limit - 100) {
+            cprint(`Reaching limit ${this.limit}, stops connecting`, colors.yellow);
             return;
         }
 
-        if (this.recentlyClosed > 30) {
-            this.recentlyClosed.splice(150, this.recentlyClosed.length - 150);
+        if (this.recentlyClosed.length > 30) {
+            this.recentlyClosed.splice(20, this.recentlyClosed.length);
         }
 
         let promise = Bilibili.getRoomsInArea(GLOBAL);
@@ -66,6 +67,8 @@ class GuardController {
                             dmlistener.on('close', () => {
                                 this.connections.delete(roomid);
                                 this.recentlyClosed.push(roomid);
+                                if (config.verbose === true)
+                                    cprint(`@room ${roomid} socket emitted close.`, colors.yellow);
                             });
                             dmlistener.run();
                         }
