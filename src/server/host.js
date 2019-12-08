@@ -11,9 +11,9 @@ const colors = require('colors');
 
 class Host {
 
-    constructor() {
-        this.host = settings['server']['ip'];
-        this.port = settings['server']['port'];
+    constructor(host, port) {
+        if (!host) this.host = settings['server']['ip'];
+        if (!port) this.port = settings['server']['port'];
     }
 
     run() {
@@ -72,17 +72,8 @@ class Host {
         }, 20 * 1000);
 
         raffleEmitter.on('gift', (gift) => {
-            const giftStr = JSON.stringify(gift);
-            const giftData = Buffer.from(giftStr, 'utf8');
 
-            const header = Buffer.alloc(16);
-            header.writeUInt32BE(16 + giftData.length, 0);
-            header.writeUInt16BE(16, 4);
-            header.writeUInt16BE(1, 6);
-            header.writeUInt32BE(5, 8);
-            header.writeUInt32BE(1, 12);
-
-            const payload = Buffer.concat([ header, giftData ]);
+            const payload = this.parseMessage(gift);
 
             ws.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
@@ -94,17 +85,8 @@ class Host {
         });
 
         raffleEmitter.on('guard', (guard) => {
-            const guardStr = JSON.stringify(guard);
-            const guardData = Buffer.from(guardStr, 'utf8');
 
-            const header = Buffer.alloc(16);
-            header.writeUInt32BE(16 + guardData.length, 0);
-            header.writeUInt16BE(16, 4);
-            header.writeUInt16BE(1, 6);
-            header.writeUInt32BE(5, 8);
-            header.writeUInt32BE(1, 12);
-
-            const payload = Buffer.concat([ header, guardData ]);
+            const payload = this.parseMessage(guard);
 
             ws.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
@@ -114,6 +96,21 @@ class Host {
                 }
             });
         });
+    }
+
+    parseMessage(jsonObj) {
+        const str = JSON.stringify(jsonObj);
+        const data = Buffer.from(str, 'utf8');
+
+        const header = Buffer.alloc(16);
+        header.writeUInt32BE(16 + data.length, 0);
+        header.writeUInt16BE(16, 4);
+        header.writeUInt16BE(1, 6);
+        header.writeUInt32BE(5, 8);
+        header.writeUInt32BE(1, 12);
+
+        const payload = Buffer.concat([ header, data ]);
+        return payload;
     }
 }
 
