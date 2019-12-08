@@ -20,25 +20,34 @@ class RaffleHandler {
         if (this.installed === false && this.emitter) {
             this.installed = true;
 
-            this.emitter.on('guard', (guard) => {
-                cprint(
-                    `${guard['id'].toString().padEnd(11)}`
-                    + `@${guard['roomid'].toString().padEnd(11)}`
-                    + `${guard['type'].padEnd(11)}`
-                    + `${guard['name']}`, 
-                    colors.cyan
-                );
-            });
-
-            this.emitter.on('gift', (gift) => {
-                cprint(
-                    `${gift['id'].toString().padEnd(11)}`
-                    + `@${gift['roomid'].toString().padEnd(11)}`
-                    + `${gift['type'].padEnd(11)}`
-                    + `${gift['name']}`, 
-                    colors.cyan
-                );
-            });
+            this.emitter
+                .on('guard', (guard) => {
+                    cprint(
+                        `${guard['id'].toString().padEnd(11)}`
+                        + `@${guard['roomid'].toString().padEnd(11)}`
+                        + `${guard['type'].padEnd(11)}`
+                        + `${guard['name']}`, 
+                        colors.cyan
+                    );
+                })
+                .on('gift', (gift) => {
+                    cprint(
+                        `${gift['id'].toString().padEnd(11)}`
+                        + `@${gift['roomid'].toString().padEnd(11)}`
+                        + `${gift['type'].padEnd(11)}`
+                        + `${gift['name']}`, 
+                        colors.cyan
+                    );
+                })
+                .on('storm', (storm) => {
+                    cprint(
+                        `${storm['id'].toString().slice(0,7).padEnd(11)}`
+                        + `@${storm['roomid'].toString().padEnd(11)}`
+                        + `${storm['type'].padEnd(11)}`
+                        + `${storm['name']}`,
+                        colors.cyan
+                    );
+                });
         }
     }
 }

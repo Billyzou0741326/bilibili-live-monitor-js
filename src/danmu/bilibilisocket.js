@@ -6,6 +6,7 @@ const EventEmitter = require('events').EventEmitter;
 const UTF8ArrayToStr = require('../util/conversion.js').UTF8ArrayToStr;
 const StrToUTF8Array = require('../util/conversion.js').StrToUTF8Array;
 const roomidEmitter = require('../global/config.js').roomidEmitter;
+const raffleEmitter = require('../global/config.js').raffleEmitter;
 const Bilibili = require('../bilibili.js');
 const config = require('../global/config.js');
 const wsUri = require('../global/config.js').wsUri;
@@ -199,6 +200,9 @@ class BilibiliSocket extends EventEmitter {
                     cprint(msg['msg_common'], colors.cyan);
                 this.onNoticeMsg(msg);
                 break;
+            case 'SPECIAL_GIFT':
+                this.onSpecialGift(msg);
+                break;
             case 'PREPARING':
                 this.onPreparing(msg);
                 break;
@@ -208,6 +212,9 @@ class BilibiliSocket extends EventEmitter {
             default:
                 break;
         }
+    }
+
+    onSpecialGift(msg) {
     }
 
     onNoticeMsg(msg) {
@@ -251,6 +258,25 @@ class FixedGuardMonitor extends BilibiliSocket {
 
     constructor(roomid, uid) {
         super(roomid, uid);
+    }
+
+    onSpecialGift(msg) {
+        try {
+            const data = msg['data']['39'];
+
+            if (typeof data !== 'undefined' && data['action'] === 'start') {
+                const id = data['id'];
+                const details = {
+                    'id': id,
+                    'roomid': this.roomid,
+                    'type': '',
+                    'name': '节奏风暴',
+                };
+                raffleEmitter && raffleEmitter.emit('storm', details);
+            }
+        } catch (error) {
+            cprint(`Error: ${error.message} - ${JSON.stringify(msg)}`, colors.red);
+        }
     }
 
     onNoticeMsg(msg) {
