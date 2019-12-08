@@ -50,6 +50,11 @@ class Host {
 
             });
 
+            socket.on('error', (error) => {
+                cprint(`Error: ${error.message}`, colors.red);
+                socket.close();
+            });
+
         });
 
         ws.on('error', (error) => {
