@@ -23,28 +23,29 @@ class RaffleHandler {
             this.emitter
                 .on('guard', (guard) => {
                     cprint(
-                        `${guard['id'].toString().padEnd(11)}`
-                        + `@${guard['roomid'].toString().padEnd(11)}`
-                        + `${guard['type'].padEnd(11)}`
+                        `${guard['id'].toString().padEnd(13)}`
+                        + `@${guard['roomid'].toString().padEnd(13)}`
+                        + `${guard['type'].padEnd(13)}`
                         + `${guard['name']}`, 
                         colors.cyan
                     );
                 })
                 .on('gift', (gift) => {
                     cprint(
-                        `${gift['id'].toString().padEnd(11)}`
-                        + `@${gift['roomid'].toString().padEnd(11)}`
-                        + `${gift['type'].padEnd(11)}`
+                        `${gift['id'].toString().padEnd(13)}`
+                        + `@${gift['roomid'].toString().padEnd(13)}`
+                        + `${gift['type'].padEnd(13)}`
                         + `${gift['name']}`, 
                         colors.cyan
                     );
                 })
                 .on('storm', (storm) => {
                     cprint(
-                        `${storm['id'].toString().slice(0,7).padEnd(11)}`
-                        + `@${storm['roomid'].toString().padEnd(11)}`
-                        + `${storm['type'].padEnd(11)}`
-                        + `${storm['name']}`,
+                        `${storm['id'].toString().slice(0,7).padEnd(13)}`
+                        + `@${storm['roomid'].toString().padEnd(13)}`
+                        + `${storm['type'].padEnd(13)}`
+                        + `${storm['name'].padEnd(13)}`
+                        + `${storm['id']}`,
                         colors.cyan
                     );
                 });
