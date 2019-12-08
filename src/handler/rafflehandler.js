@@ -48,6 +48,15 @@ class RaffleHandler {
                         + `${storm['id']}`,
                         colors.cyan
                     );
+                })
+                .on('pk', (pk) => {
+                    cprint(
+                        `${pk['id'].toString().padEnd(13)}`
+                        + `@${pk['roomid'].toString().padEnd(13)}`
+                        + `${pk['type'].padEnd(13)}`
+                        + `${pk['name']}`, 
+                        colors.cyan
+                    );
                 });
         }
     }

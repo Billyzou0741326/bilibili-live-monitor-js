@@ -3,7 +3,7 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-const settings = require('../settings.json');
+const settings = require('../global/config.js');
 const { raffleEmitter } = require('../global/config.js');
 
 const cprint = require('../util/printer.js');
@@ -92,6 +92,19 @@ class Host {
         raffleEmitter.on('guard', (guard) => {
 
             const payload = this.parseMessage(guard);
+
+            ws.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(payload, {
+                        'binary': true, 
+                    });
+                }
+            });
+        });
+
+        raffleEmitter.on('pk', (pk) => {
+
+            const payload = this.parseMessage(pk);
 
             ws.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
