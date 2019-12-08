@@ -203,6 +203,9 @@ class BilibiliSocket extends EventEmitter {
             case 'SPECIAL_GIFT':
                 this.onSpecialGift(msg);
                 break;
+            case 'PK_LOTTERY_START':
+                this.onPkLottery(msg);
+                break;
             case 'PREPARING':
                 this.onPreparing(msg);
                 break;
@@ -212,6 +215,9 @@ class BilibiliSocket extends EventEmitter {
             default:
                 break;
         }
+    }
+
+    onPkLottery(msg) {
     }
 
     onSpecialGift(msg) {
@@ -258,6 +264,17 @@ class FixedGuardMonitor extends BilibiliSocket {
 
     constructor(roomid, uid) {
         super(roomid, uid);
+    }
+
+    onPkLottery(msg) {
+        const data = msg['data'];
+        const pkInfo = {
+            'id': data['id'],
+            'roomid': this.roomid,
+            'type': 'pk',
+            'name': '大乱斗',
+        };
+        raffleEmitter && raffleEmitter.emit('pk', pkInfo);
     }
 
     onSpecialGift(msg) {
