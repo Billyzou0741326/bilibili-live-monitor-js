@@ -6,7 +6,9 @@ const config = require('../global/config.js');
 const cprint = require('../util/printer.js');
 const Bilibili = require('../bilibili.js');
 const {
-    GuardMonitor, RaffleMonitor } = require('../danmu/bilibilisocket.js');
+    GuardMonitor, 
+    FixedGuardMonitor, 
+    RaffleMonitor } = require('../danmu/bilibilisocket.js');
 
 class GuardController {
 
@@ -18,7 +20,9 @@ class GuardController {
     }
 
     run() {
-        this.setupGuardMonitor();
+        this.setupFixedMonitor().then(() => {
+            this.setupGuardMonitor();
+        });
         this.scheduledCheck = setInterval(() => {
             this.setupGuardMonitor();
             cprint(`Monitoring ${this.connections.size} rooms`, colors.green);
@@ -43,44 +47,69 @@ class GuardController {
         }
 
         if (this.recentlyClosed.length > 30) {
-            this.recentlyClosed.splice(20, this.recentlyClosed.length);
+            this.recentlyClosed.splice(20);
         }
 
         let promise = Bilibili.getRoomsInArea(GLOBAL);
 
-        promise.then((promises) => {
+        promise.then(roomInfoList => {
 
-            promises.forEach((promise) => {
+            // { 房间号, 在线人数 }
+            // { 'roomid': roomid, 'online': online }
+            roomInfoList.forEach(roomInfo => {
+                const roomid = roomInfo['roomid'];
+                const online = roomInfo['online'];
 
-                promise.then((room_list) => {
+                if (online > 50 
+                    && this.connections.has(roomid) === false
+                    && this.recentlyClosed.includes(roomid) === false) {
 
-                    room_list.forEach((roomInfo) => {
-                        const roomid = roomInfo['roomid'];
-                        const online = roomInfo['online'];
+                    let dmlistener = new GuardMonitor(roomid, 0);
+                    this.connections.set(roomid, dmlistener);
+                    dmlistener.on('close', () => {
+                        this.connections.delete(roomid);
+                        this.recentlyClosed.push(roomid);
 
-                        if (online > 50 
-                                && this.connections.has(roomid) === false
-                                && this.recentlyClosed.includes(roomid) === false) {
-
-                            let dmlistener = new GuardMonitor(roomid, 0);
-                            this.connections.set(roomid, dmlistener);
-                            dmlistener.on('close', () => {
-                                this.connections.delete(roomid);
-                                this.recentlyClosed.push(roomid);
-                                if (config.verbose === true)
-                                    cprint(`@room ${roomid} socket emitted close.`, colors.yellow);
-                            });
-                            dmlistener.run();
+                        // 上舰人数超过3，加入永久监听
+                        if (dmlistener.guardCount > 3) {
+                            this.setupFixedMonitorAtRoom(roomid);
                         }
+                        if (config.verbose === true)
+                            cprint(`@room ${roomid} socket emitted close.`, colors.yellow);
                     });
-                }).catch((error) => {
-
-                    cprint(`${Bilibili.getRoomsInArea.name} - ${error}`, colors.red);
-                });
+                    dmlistener.run();
+                }
             });
+
         }).catch((error) => {
+
             cprint(`${Bilibili.getRoomsInArea.name} - ${error}`, colors.red);
         });
+
+    }
+
+    setupFixedMonitor() {
+        return Bilibili.getFixedRooms()
+            .then(roomList => {
+                roomList.forEach(roomid => {
+                    if (this.connections.has(roomid) === false) {
+                        this.setupFixedMonitorAtRoom(roomid);
+                    }
+                });
+            })
+            .catch(error => {
+                cprint(`${Bilibili.getFixedRooms.name} - ${error}`, colors.red);
+            });
+    }
+
+    setupFixedMonitorAtRoom(roomid) {
+        let dmlistener = new FixedGuardMonitor(roomid, 0);
+        this.connections.set(roomid, dmlistener);
+        dmlistener.on('close', () => {
+            this.connections.delete(roomid);
+            this.recentlyClosed.push(roomid);
+        });
+        dmlistener.run();
     }
 }
 
@@ -122,7 +151,7 @@ class RaffleController {
 
             }).catch((errorMsg) => {
                 cprint(`${Bilibili.getRoomsInEachArea.name} - ${error}`, colors.red);
-            });;
+            });
         });
     }
 
@@ -152,27 +181,19 @@ class RaffleController {
     }
 
     recoverArea(areaid) {
-        Bilibili.getRoomsInArea(areaid, 10, 10).then((promises) => {
-            promises.forEach((promise) => {
+        Bilibili.getRoomsInArea(areaid, 10, 10).then((roomInfoList) => {
 
-                promise.then((room_list) => {
-                    room_list = room_list.map((roomInfo) => {
-                        const roomid = roomInfo['roomid'];
-                        return roomid;
-                    });
-                    this.setupRaffleMonitorInArea(areaid, room_list);
-                }).catch((error) => {
-                    cprint(`${Bilibili.getRoomsInArea.name} - ${error}`, colors.red);
-                });
-
+            const room_list = roomInfoList.map((roomInfo) => {
+                return roomInfo['roomid'];
             });
+            this.setupRaffleMonitorInArea(areaid, room_list);
+
         }).catch((error) => {
             cprint(`${Bilibili.getRoomsInArea.name} - ${error}`, colors.red);
         });
     }
 
     close() {
-        // TODO
         this.scheduledCheck && clearInterval(this.scheduledCheck);
         this.scheduledCheck = null;
         this.connections.forEach((value, key) => {

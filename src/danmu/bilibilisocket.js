@@ -244,12 +244,51 @@ class BilibiliSocket extends EventEmitter {
 
 }
 
-class GuardMonitor extends BilibiliSocket {
+/**
+ * 下播状态仍进行监听的房间 (大航海榜、元气榜)
+ */
+class FixedGuardMonitor extends BilibiliSocket {
+
+    constructor(roomid, uid) {
+        super(roomid, uid);
+    }
+
+    onNoticeMsg(msg) {
+
+        const msg_type = msg['msg_type'];
+        const roomid = msg['real_roomid'];
+        
+        switch (msg_type) {
+            case 2:
+                // fall through
+            case 3:
+                if (roomid === this.roomid) {
+                    this.emitter && this.emitter.emit('gift', roomid);
+
+                    if (msg_type === 3) this.onGuard(msg);
+                }
+                break;
+        }
+    }
+
+    onGuard(msg) {}
+}
+
+/**
+ * 下播5分钟(offTimes * 30)后关闭
+ */
+class GuardMonitor extends FixedGuardMonitor {
 
     constructor(roomid, uid) {
         super(roomid, uid);
         this.offTimes = 0;
-        this.qualified = false;
+        this.guardCount = 0;
+        // 检测到10个以上的上舰信息转为Fixed
+        // 不知道怎么转23333 (Event?)
+    }
+
+    onGuard(msg) {
+        ++this.guardCount;
     }
 
     onPreparing(msg) {
@@ -264,22 +303,6 @@ class GuardMonitor extends BilibiliSocket {
 
     }
 
-    onNoticeMsg(msg) {
-
-        const msg_type = msg['msg_type'];
-        const roomid = msg['real_roomid'];
-        
-        switch (msg_type) {
-            case 2:
-                // fall through
-            case 3:
-                if (roomid === this.roomid) {
-                    this.emitter && this.emitter.emit('gift', roomid);
-                }
-                break;
-        }
-    }
-
     onPopularity(popularity) {
         if (popularity <= 1) {
             ++this.offTimes;
@@ -291,6 +314,9 @@ class GuardMonitor extends BilibiliSocket {
 
 }
 
+/**
+ * 抽奖监听
+ */
 class RaffleMonitor extends BilibiliSocket {
 
     constructor(roomid, uid, areaid=0) {
@@ -347,4 +373,5 @@ module.exports = {
     BilibiliSocket, 
     RaffleMonitor, 
     GuardMonitor, 
+    FixedGuardMonitor,
 };
