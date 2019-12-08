@@ -90,8 +90,70 @@ class Bilibili {
         return Bilibili.get(options);
     }
 
-    /** Get streaming entities in area ``areaid``
-     *
+    /**
+     * 永久监听目标
+     */
+    static getFixedRooms() {
+        return Bilibili.getAllSailboatRooms();
+    }
+
+    /**
+     * 大航海榜
+     * 返回值: Array - roomid
+     */
+    static getAllSailboatRooms() {
+        const MAX_PAGES = 3;
+        const promises = [];
+
+        for (let page = 1; page <= MAX_PAGES; ++page) {
+            promises.push(
+                Bilibili.getSailboatRooms(page)
+                    .then(jsonObj => {
+                        return jsonObj['data']['list'].map(entry => entry['roomid']);
+                    })
+                    .catch(error => {
+                        cprint(`${Bilibili.getSailboatRooms.name} - ${error}`, colors.red);
+                        return [];
+                    })
+            );
+        }
+
+        const result = Promise.all(promises).then(lists => {
+            const finalList = [];
+            lists.forEach(list => {
+                list.forEach(roomid => finalList.push(roomid));
+            });
+            return finalList;
+        });
+
+        return result;
+    }
+
+    static getSailboatRooms(page) {
+        // Page 1-3 (Rank 0-50)
+        const url = 'api.live.bilibili.com';
+        const path = '/rankdb/v1/Rank2018/getWebTop';
+        const page_size = 20;   // 必须是20
+        const params = {
+            'type': 'sail_boat_number',
+            'page': page,
+            'is_trend': 1,
+            'page_size': page_size,
+        };
+        const query = querystring.stringify(params);
+        const headers = { 'Connection': 'close' };
+        const options = {
+            'headers': headers,
+            'host': url,
+            'path': `${path}?${query}`,
+        };
+
+        return rateLimiter.get(options);
+    }
+
+    /** 
+     * Get streaming roomd in area ``areaid``
+     * @return promise -> [ { 'roomid': roomid, 'online': online }, ... ]
      */
     static getRoomsInArea(areaid, size=99, count=Infinity) {
         const url = 'api.live.bilibili.com';
@@ -109,53 +171,63 @@ class Bilibili {
 
         let promises = [];
 
-        const promise = new Promise((resolve_outer, reject_outer) => {
+        const promise = Bilibili.getLiveCount().catch(error => {
 
-            Bilibili.getLiveCount().then((room_count) => {
+            cprint(`${Bilibili.getLiveCount.name} - ${error}`, colors.red);
+            return 5000;    // 出错则返回默认5000
 
-                room_count = Math.min(count, room_count);
-                const page = Number.parseInt(Math.round(room_count / page_size)) + 2;
-                let i = 1;
-                
-                while (i < page) {
-                    params.page = i;
-                    const query = querystring.stringify(params);
-                    const options = {
-                        'host': url, 
-                        'path': `${path}?${query}`, 
-                        'headers': headers, 
-                    };
-                    const x = i;
+        }).then(room_count => {
 
-                    promises.push(new Promise((resolve, reject) => {
+            room_count = Math.min(count, room_count);
+            const page = Number.parseInt(Math.round(room_count / page_size)) + 2;
 
-                        rateLimiter.get(options).then((jsonObj) => {
-                            if (jsonObj['code'] !== 0) {
-                                reject(`Error: API code ${jsonObj['code']}`);
-                            } else {
-                                const rooms_info = jsonObj['data']['list'].map(entry => { 
-                                    return {
-                                        'roomid': entry['roomid'], 
-                                        'online': entry['online'], 
-                                    };
-                                });
-                                resolve(rooms_info);
-                            }
-                        }).catch((error) => {
-                            reject(error);
-                        });
+            for (let i = 1; i < page; ++i) {
+                params.page = i;
+                const query = querystring.stringify(params);
+                const options = {
+                    'host': url, 
+                    'path': `${path}?${query}`, 
+                    'headers': headers, 
+                };
+                const x = i;
 
-                    }));
-                    ++i;
-                }
-                resolve_outer(promises);
-            }).catch((error) => {
-                reject_outer(error);
+                promises.push(new Promise((resolve, reject) => {
+
+                    rateLimiter.get(options).then((jsonObj) => {
+                        if (jsonObj['code'] !== 0) {
+                            reject(`Error: API code ${jsonObj['code']}`);
+                        } else {
+                            const rooms_info = jsonObj['data']['list'].map(entry => { 
+                                return {
+                                    'roomid': entry['roomid'], 
+                                    'online': entry['online'], 
+                                };
+                            });
+                            resolve(rooms_info);
+                        }
+                    }).catch((error) => {
+                        reject(`${getRoomsInArea} - ${error}`);
+                    });
+
+                }).catch(error => {
+                    cprint(error, colors.red);
+                    return [];
+                }));
+            }
+
+            const roomInfos = [];
+            return Promise.all(promises).then(roomInfoLists => {
+
+                roomInfoLists.forEach(roomInfoList => {
+                    roomInfoList.forEach(roomInfo => {
+                        roomInfos.push(roomInfo);
+                    });
+                });
+
+                return roomInfos;
             });
-
         });
 
-        // return promises;
         return promise;
     }
 
