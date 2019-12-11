@@ -14,6 +14,7 @@ class Host {
     constructor(host, port) {
         if (!host) this.host = settings['server']['ip'];
         if (!port) this.port = settings['server']['port'];
+        this.ws = null;
     }
 
     run() {
@@ -31,6 +32,8 @@ class Host {
             'perMessageDeflate': false, 
             'maxPayload': 8 * 1024, 
         });
+
+        this.ws = ws;
 
         ws.on('connection', (socket) => {
 
@@ -76,46 +79,41 @@ class Host {
             });
         }, 20 * 1000);
 
-        raffleEmitter.on('gift', (gift) => {
+        raffleEmitter
+            .on('gift', (gift) => {
 
-            const payload = this.parseMessage(gift);
+                this.broadcast(this.parseMessage(gift));
+            })
+            .on('guard', (guard) => {
 
-            ws.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(payload, {
-                        'binary': true, 
-                    });
-                }
+                this.broadcast(this.parseMessage(guard));
+            })
+            .on('pk', (pk) => {
+
+                this.broadcast(this.parseMessage(pk));
+            })
+            .on('storm', (storm) => {
+
+                this.broadcast(this.parseMessage(storm));
             });
-        });
+    }
 
-        raffleEmitter.on('guard', (guard) => {
-
-            const payload = this.parseMessage(guard);
-
-            ws.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(payload, {
-                        'binary': true, 
-                    });
-                }
-            });
-        });
-
-        raffleEmitter.on('pk', (pk) => {
-
-            const payload = this.parseMessage(pk);
-
-            ws.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(payload, {
-                        'binary': true, 
-                    });
-                }
-            });
+    /**
+     * @params Buffer payload
+     */
+    broadcast(payload) {
+        this.ws && this.ws.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(payload, {
+                    'binary': true, 
+                });
+            }
         });
     }
 
+    /**
+     * @params Object jsonObj
+     */
     parseMessage(jsonObj) {
         const str = JSON.stringify(jsonObj);
         const data = Buffer.from(str, 'utf8');
