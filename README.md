@@ -18,7 +18,7 @@
 
 ## Getting Started
 
-### Config file (/global/config.js) 
+### Config file (/settings.json) (/global/config.js) 
 
 ```
 {
