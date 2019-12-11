@@ -286,7 +286,7 @@ class FixedGuardMonitor extends BilibiliSocket {
                 const details = {
                     'id': id,
                     'roomid': this.roomid,
-                    'type': '',
+                    'type': 'storm',
                     'name': '节奏风暴',
                 };
                 raffleEmitter && raffleEmitter.emit('storm', details);
@@ -327,7 +327,6 @@ class GuardMonitor extends FixedGuardMonitor {
         this.offTimes = 0;
         this.guardCount = 0;
         // 检测到10个以上的上舰信息转为Fixed
-        // 不知道怎么转23333 (Event?)
     }
 
     onGuard(msg) {
