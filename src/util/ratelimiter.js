@@ -6,16 +6,16 @@ class RateLimter {
     constructor(client) {
         this.queue = [];    // queue.push() queue.shift()
         this.client = client;
-        this.RATE = 6;
-        this.MAX_TOKENS = 10;
+        this.RATE = 8;
+        this.MAX_TOKENS = 15;
 
         this.tokens = this.MAX_TOKENS;
         this.updatedAt = +new Date();
     }
 
-    get(options) {
+    request(...args) {
         return this.waitForTokens().then(() => {
-            return this.client.get(options);
+            return this.client.request(...args);
         });
     }
 
