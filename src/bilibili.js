@@ -53,8 +53,8 @@
             const doRequest = (promise) => {
                 return promise.catch((error) => {
                     if (tries > 0) {
-                        console.log(`${error}`);
-                        console.log(`[ 修正 ${3-tries} ]: 重现request`);
+                        cprint(`${error}`, colors.red);
+                        cprint(`[ 修正 ${3-tries} ]: 重现request`, colors.green);
                         --tries;
                         return doRequest(newRequest());
                     } else {
