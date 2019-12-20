@@ -2,7 +2,7 @@
 
 
 const EventEmitter = require('events').EventEmitter;
-
+const History = require('../handler/history.js');
 
 const wsUri = {
     'host': 'broadcastlv.chat.bilibili.com', 
@@ -16,6 +16,7 @@ const server = {
 
 const roomidEmitter = new EventEmitter();
 const raffleEmitter = new EventEmitter();
+const repository = new History(raffleEmitter);
 
 const verbose = false;
 const debug = false;
@@ -29,6 +30,7 @@ module.exports = {
     server, 
     roomidEmitter, 
     raffleEmitter, 
+    repository,
     verbose, 
     debug, 
     error,
