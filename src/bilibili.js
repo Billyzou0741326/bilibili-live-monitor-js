@@ -13,7 +13,7 @@
     const httpsAgent = (() => {
         const options = {
             'keepAlive': true, 
-            'maxFreeSockets': 128, 
+            'maxFreeSockets': 512, 
         };
         return new https.Agent(options);
     })();
@@ -21,10 +21,12 @@
     const httpAgent = (() => {
         const options = {
             'keepAlive': true, 
-            'maxFreeSockets': 128, 
+            'maxFreeSockets': 512, 
         };
         return new http.Agent(options);
     })();
+
+    process.env['x'] = process.env['x'] || 'X-Remote-IP';
 
 
     /** Emits requests to the bilibili API */
@@ -50,18 +52,19 @@
             }
             options['agent'] = options['agent'] || agent;
 
-            const doRequest = (promise) => {
-                return promise.catch((error) => {
-                    if (tries > 0) {
+            const doRequest = async () => {
+                for (let i = 0; i < tries; ++i) {
+                    try {
+                        let result = await newRequest();
+                        return result;
+                    } catch (error) {
                         cprint(`${error}`, colors.red);
-                        cprint(`[ 修正 ${3-tries} ]: 重现request`, colors.green);
-                        --tries;
-                        return doRequest(newRequest());
-                    } else {
-                        throw error;
+                        cprint(`[ 修正 ${i} ]: 重现request`, colors.green);
                     }
-                });
+                }
+                return newRequest();
             };
+
             const newRequest = () => new Promise((resolve, reject) => {
 
                 const req = xhr.request(options, (response) => {
@@ -76,7 +79,7 @@
                             dataSequence.push(data);
                         });
                         response.on('end', () => {
-                            const jsonStr = Buffer.concat(dataSequence).toString();
+                            const jsonStr = Buffer.concat(dataSequence).toString('utf8');
                             try {
                                 const jsonObj = JSON.parse(jsonStr);
                                 resolve(jsonObj);
@@ -94,7 +97,7 @@
                 req.end();
             });
 
-            return doRequest(newRequest());
+            return doRequest();
         }
 
         /** Check for lottery in room ``roomid``
@@ -109,6 +112,7 @@
                 'Cookie': cookies !== null ? cookies : {}, 
                 'Connection': 'close', 
             };
+            headers[process.env['x']] = '127.0.0.1';
             const options = {
                 'headers': headers, 
                 'host': host, 
@@ -194,8 +198,9 @@
                 'sort_type': 'online',
             };
             const headers = {
-                'Connection': 'close',
+                'Connection': 'keep-alive',
             };
+            headers[process.env['x']] = '127.0.0.1';
 
             let promises = [];
 
@@ -368,7 +373,8 @@
         }
     }
 
-    const rateLimiter = new RateLimiter(Bilibili);
+    // const rateLimiter = new RateLimiter(Bilibili);
+    const rateLimiter = Bilibili;
 
     module.exports = Bilibili;
 

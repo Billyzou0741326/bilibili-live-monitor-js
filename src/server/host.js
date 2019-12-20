@@ -3,7 +3,7 @@
 const net = require('net');
 const WebSocket = require('ws');
 
-const settings = require('../global/config.js');
+const config = require('../global/config.js');
 const { raffleEmitter } = require('../global/config.js');
 
 const cprint = require('../util/printer.js');
@@ -12,8 +12,8 @@ const colors = require('colors');
 class Host {
 
     constructor(host, port) {
-        if (!host) this.host = settings['server']['host'];
-        if (!port) this.port = settings['server']['port'];
+        if (!host) this.host = config['wsServer']['host'];
+        if (!port) this.port = config['wsServer']['port'];
         this.ws = null;
     }
 
@@ -67,9 +67,12 @@ class Host {
 
         ws.on('error', (error) => {
             ws.close(() => {
-                cprint(`Error: ${error.message}`, colors.red);
-                cprint('未能建立服务器 - 可能原因: 接口已被占用', colors.red);
-                cprint('建议修改``settings.json``中的port值', colors.red);
+                if (error.code === 'EADDRINUSE') {
+                    cprint(`未能建立服务器 - 端口${this.port}已被占用`, colors.red);
+                    cprint('建议修改``settings.json``中的port值', colors.red);
+                } else {
+                    cprint(`Error: ${error.message}`, colors.red);
+                }
             });
         });
 
