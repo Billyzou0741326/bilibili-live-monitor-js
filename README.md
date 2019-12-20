@@ -37,7 +37,7 @@
 
 ```javascript
 {
-    "server": {
+    "wsServer": {
         "ip": "127.0.0.1",      // 本地localhost推送；0.0.0.0可与外网相连
         "port": 8999            // 选个接口 (client配对)
     },

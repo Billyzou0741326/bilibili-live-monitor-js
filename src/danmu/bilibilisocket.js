@@ -42,6 +42,10 @@ class BilibiliSocket extends EventEmitter {
         this.healthCheck = null;
         this.lastRead = 0;
 
+        this.bind();
+    }
+
+    bind() {
         this.onData = this.onData.bind(this);
         this.onConnect = this.onConnect.bind(this);
         this.onMessage = this.onMessage.bind(this);
@@ -71,7 +75,7 @@ class BilibiliSocket extends EventEmitter {
             cprint(`@room ${this.roomid} connected`, colors.green);
         this.socket && this.socket.write(this.handshake);
         this.healthCheck = setInterval(() => {
-            if (+new Date() / 1000 - this.lastRead > 35)
+            if (new Date() - this.lastRead > 35 * 1000)
                 this.close(false);
         }, 45 * 1000);  // 每45秒检查读取状态 如果没读取到任何信息即重连
     }
@@ -83,12 +87,7 @@ class BilibiliSocket extends EventEmitter {
     }
 
     onData(buffer) {
-        if (this.socket === null) {
-            if (config.debug === true) 
-                cprint(`${this.roomid} should be closed, socket is null`, colors.red);
-            return;
-        }
-        this.lastRead = +new Date() / 1000;
+        this.lastRead = +new Date();
         this.buffer = Buffer.concat([ this.buffer, buffer ]);
         if (this.totalLength <= 0 && this.buffer.length >= 4)
             this.totalLength = this.buffer.readUInt32BE(0);
@@ -110,16 +109,12 @@ class BilibiliSocket extends EventEmitter {
                 this.buffer = this.buffer.slice(this.totalLength, this.buffer.length);
                 if (this.buffer.length === 0) {
                     this.totalLength = 0;
-                    if (this.buffer.length === 0) {
-                        this.buffer = Buffer.alloc(0);
-                    }
+                    this.buffer = Buffer.alloc(0);
                 } else if (this.buffer.length >= 4) {
                     this.totalLength = this.buffer.readUInt32BE(0);
                 } else {
                     this.totalLength = -1;
                 }
-                if (config.debug === true)
-                    cprint(`BufferSize ${this.buffer.length} Length ${this.totalLength}`, colors.green);
             } catch (error) {
                 cprint(`Error: ${error.message} @room ${this.roomid}`, colors.red);
                 config.debug = false;
@@ -168,7 +163,6 @@ class BilibiliSocket extends EventEmitter {
         this.healthCheck = null;
         (this.socket 
             && this.socket.unref().end().destroy() 
-            && this.socket.destroyed
             && (this.socket = null));
         if (this.closed_by_user === false) {
             this.run();
