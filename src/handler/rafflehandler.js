@@ -23,19 +23,19 @@ class RaffleHandler {
             this.emitter
                 .on('guard', (guard) => {
                     cprint(
-                        `${guard['id'].toString().padEnd(13)}`
-                        + `@${guard['roomid'].toString().padEnd(13)}`
-                        + `${guard['type'].padEnd(13)}`
-                        + `${guard['name']}`, 
+                        `${guard.id.toString().padEnd(13)}`
+                        + `@${guard.roomid.toString().padEnd(13)}`
+                        + `${guard.type.padEnd(13)}`
+                        + `${guard.name}`, 
                         colors.cyan
                     );
                 })
                 .on('gift', (gift) => {
                     cprint(
-                        `${gift['id'].toString().padEnd(13)}`
-                        + `@${gift['roomid'].toString().padEnd(13)}`
-                        + `${gift['type'].padEnd(13)}`
-                        + `${gift['name']}`, 
+                        `${gift.id.toString().padEnd(13)}`
+                        + `@${gift.roomid.toString().padEnd(13)}`
+                        + `${gift.type.padEnd(13)}`
+                        + `${gift.name}`, 
                         colors.cyan
                     );
                 })
