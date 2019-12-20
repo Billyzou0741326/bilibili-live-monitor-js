@@ -12,26 +12,31 @@ const colors = require('colors');
 class Host {
 
     constructor(host, port) {
-        if (!host) this.host = settings['server']['ip'];
+        if (!host) this.host = settings['server']['host'];
         if (!port) this.port = settings['server']['port'];
         this.ws = null;
     }
 
     run() {
         try {
-            this.listen();
+            this.listen(this.createServer());
         } catch (error) {
             cprint(`Failed to setup server: ${error.message}`, colors.red);
         }
     }
 
-    listen() {
+    createServer() {
+        cprint(`WS server listening on ${this.host}:${this.port}`, colors.green);
         const ws = new WebSocket.Server({
             'host': this.host, 
             'port': this.port, 
             'perMessageDeflate': false, 
-            'maxPayload': 8 * 1024, 
+            'maxPayload': 4 * 1024, 
         });
+        return ws;
+    }
+
+    listen(ws) {
 
         this.ws = ws;
 
