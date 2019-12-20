@@ -106,17 +106,19 @@
         static getRaffleInRoom(roomid, cookies=null) {
             const host = 'api.live.bilibili.com';
             const path = '/xlive/lottery-interface/v1/lottery/Check';
+            const method = 'GET';
             const params = { 'roomid': roomid, };
             const query = querystring.stringify(params);
             const headers = {
-                'Cookie': cookies !== null ? cookies : {}, 
-                'Connection': 'close', 
+                'Cookie': cookies !== null ? cookies : '', 
+                'Connection': 'keep-alive',
             };
             headers[process.env['x']] = '127.0.0.1';
             const options = {
-                'headers': headers, 
-                'host': host, 
-                'path': `${path}?${query}`, 
+                'host': host,
+                'path': `${path}?${query}`,
+                'method': method,
+                'headers': headers,
             };
 
             return Bilibili.request(options, false);
@@ -173,11 +175,13 @@
                 'page_size': page_size,
             };
             const query = querystring.stringify(params);
+            const method = 'GET';
             const headers = { 'Connection': 'close' };
             const options = {
-                'headers': headers,
                 'host': url,
                 'path': `${path}?${query}`,
+                'method': method,
+                'headers': headers,
             };
 
             return rateLimiter.request(options, false);
@@ -190,15 +194,16 @@
         static getRoomsInArea(areaid, size=99, count=Infinity) {
             const url = 'api.live.bilibili.com';
             const path = '/room/v3/area/getRoomList';
+            const method = 'GET';
+            const headers = {
+                'Connection': 'keep-alive',
+            };
             const page_size = size;
             const params = {
                 'parent_area_id': areaid, 
                 'page': 0, 
                 'page_size': size > 99 || size < 0 ? 99 : size, 
                 'sort_type': 'online',
-            };
-            const headers = {
-                'Connection': 'keep-alive',
             };
             headers[process.env['x']] = '127.0.0.1';
 
@@ -218,9 +223,10 @@
                     params.page = i;
                     const query = querystring.stringify(params);
                     const options = {
-                        'host': url, 
-                        'path': `${path}?${query}`, 
-                        'headers': headers, 
+                        'host': url,
+                        'path': `${path}?${query}`,
+                        'method': method,
+                        'headers': headers,
                     };
                     const x = i;
 
@@ -277,12 +283,14 @@
                 'sort_type': 'online', 
             };
             const query = querystring.stringify(params);
+            const method = 'GET';
             const headers = {
                 'Connection': 'close', 
             };
             const options = {
                 'host': url, 
                 'path': `${path}?${query}`,
+                'method': method,
                 'headers': headers, 
             };
 
@@ -301,13 +309,15 @@
             const url = 'api.live.bilibili.com';
             const path = '/gift/v4/Live/giftConfig';
             const params = {};
+            const method = 'GET';
             const headers = {
                 'Connection': 'close', 
             };
             const options = {
-                'host': url, 
-                'path': path, 
-                'headers': headers, 
+                'host': url,
+                'path': path,
+                'method': method,
+                'headers': headers,
             };
 
             return rateLimiter.request(options, false);
@@ -322,6 +332,7 @@
                 'page_size': 10, 
                 'sort_type': 'online', 
             };
+            const method = 'GET';
             const headers = {
                 'Connection': 'close', 
             };
@@ -336,6 +347,7 @@
                 const options = {
                     'host': url, 
                     'path': `${path}?${query}`, 
+                    'method': method,
                     'headers': headers, 
                 };
 
@@ -349,16 +361,19 @@
         static isLive(roomid) {
             const url = 'api.live.bilibili.com';
             const path = '/room/v1/Room/room_init';
+            const method = 'GET';
             const params = {
                 'id': roomid, 
             };
             const headers = {
-                'Connection': 'close', 
+                'Connection': 'keep-alive',
             };
+            headers[process.env['x']] = '127.0.0.1';
             const query = querystring.stringify(params);
             const options = {
                 'host': url, 
                 'path': `${path}?${query}`, 
+                'method': method,
                 'headers': headers, 
             };
 
