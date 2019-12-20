@@ -92,6 +92,7 @@ class RoomidHandler {
                 .withRoomid(roomid)
                 .withType(g['type'])
                 .withName(gift_name)
+                .withWait(g['time_wait'])
                 .withExpireAt(g['time'] + Number.parseInt(0.001 * new Date()))
                 .build();
         });
@@ -114,7 +115,7 @@ class RoomidHandler {
 
         gifts.forEach((g) => {
             const id = g.id;
-            let cool_down = g.expireAt - Number.parseInt(0.001 * new Date());
+            let cool_down = g.wait;
             cool_down = cool_down > 0 ? cool_down : 0;
 
             if (!this.gift_history.has(id)) {

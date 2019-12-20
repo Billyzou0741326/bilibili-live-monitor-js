@@ -13,6 +13,7 @@
             this.roomid = this.roomid || 0;
             this.type = this.type || '';
             this.name = this.name || '';
+            this.wait = (this.wait && this.wait >= 0) ? this.wait : 0;
             this.expireAt = this.expireAt || 0;
             return new Guard(this);
         }
@@ -39,6 +40,11 @@
 
         withExpireAt(expireAt) {
             this.expireAt = expireAt;
+            return this;
+        }
+
+        withWait(wait) {
+            this.wait = wait;
             return this;
         }
 
