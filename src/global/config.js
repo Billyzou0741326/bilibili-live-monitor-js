@@ -1,6 +1,7 @@
 'use strict';
 
 
+const settings = require('../settings.json');
 const EventEmitter = require('events').EventEmitter;
 const History = require('../handler/history.js');
 
@@ -11,7 +12,7 @@ const wsUri = {
 
 const server = {
     'host': '0.0.0.0', 
-    'port': 8999, 
+    'port': settings['server']['port'] || 8999, 
 };
 
 const roomidEmitter = new EventEmitter();
