@@ -6,6 +6,7 @@ process.env.UV_THREAD_POOL_SIZE = 48;
 
 const colors = require('colors');
 const express = require('express');
+const http = require('http');
 
 const {
     RaffleMonitor, GuardMonitor } = require('./danmu/bilibilisocket.js');
@@ -27,6 +28,7 @@ const router = require('./server/router.js');
     (function main() {
         cprint('bilibili-monitor[1.0.0] successfully launched', colors.green);
 
+        process.env['x'] = 'X-Remote-IP';
         read_args();
         let limit = raise_nofile_limit();
 
@@ -45,14 +47,23 @@ const router = require('./server/router.js');
         raffleController.run();
         raffleHandler.run();
         roomidHandler.run();
+
     })();
 
 
     function setupApp(expressApp) {
-        const httpHost = settings['httpServer'].ip;
-        const httpPort = settings['httpServer'].port;
+        const httpHost = config['httpServer'].host;
+        const httpPort = config['httpServer'].port;
         expressApp.use('/', router);
-        expressApp.listen(httpPort, httpHost);
+        const server = http.createServer(expressApp).listen(httpPort, httpHost);
+        server.on('error', error => {
+            if (error.code === 'EADDRINUSE') {
+                cprint(`未能建立http服务器 - 端口${httpPort}已被占用`, colors.red);
+                cprint('建议修改``settings.json``中的httpServer.port值', colors.red);
+            } else {
+                cprint(`Error: error.message`, colors.red);
+            }
+        });
         cprint(`Http server listening on ${httpHost}:${httpPort}`, colors.green);
     }
 
@@ -84,23 +95,45 @@ const router = require('./server/router.js');
             config.debug = true;
         }
 
-        config.ip = settings['server']['ip'];
-        config.port = settings['server']['port'];
+        config.ip = settings['wsServer']['ip'];
+        config.port = settings['wsServer']['port'];
 
         const ipIndex = process.argv.indexOf('--ip');
         if (ipIndex !== -1) {
-            if (ipIndex + 1 < process.argv[ipIndex+1]) {
-                const ip = process.argv[ipIndex+1];
-                config.server['ip'] = ip;
+            const i = ipIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const ip = process.argv[i + 1];
+                config.wsServer['ip'] = ip;
             }
         }
 
         const portIndex = process.argv.indexOf('--port');
         if (portIndex !== -1) {
-            if (portIndex + 1 < process.argv[portIndex+1]) {
-                const port = Number.parseInt(process.argv[portIndex+1]);
+            const i = portIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const port = Number.parseInt(process.argv[i + 1]);
                 if (!isNaN(port)) {
-                    config.server['port'] = port;
+                    config.wsServer['port'] = port;
+                }
+            }
+        }
+
+        const httpIpIndex = process.argv.indexOf('--hIp');
+        if (httpIpIndex !== -1) {
+            const i = httpIpIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const ip = process.argv[i + 1];
+                config.httpServer['ip'] = ip;
+            }
+        }
+
+        const httpPortIndex = process.argv.indexOf('--hPort');
+        if (httpPortIndex !== -1) {
+            const i = httpPortIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const port = Number.parseInt(process.argv[i + 1]);
+                if (!isNaN(port)) {
+                    config.httpServer['port'] = port;
                 }
             }
         }

@@ -10,9 +10,13 @@ const wsUri = {
     'port': 2243, 
 };
 
-const server = {
-    'host': '0.0.0.0', 
-    'port': settings['server']['port'] || 8999, 
+const wsServer = {
+    'host': settings['wsServer']['ip'] || '0.0.0.0', 
+    'port': settings['wsServer']['port'] || 8999, 
+};
+const httpServer = {
+    'host': settings['httpServer']['ip'] || '0.0.0.0',
+    'port': settings['httpServer']['port'] || 9001,
 };
 
 const roomidEmitter = new EventEmitter();
@@ -28,7 +32,8 @@ const error = {
 
 module.exports = {
     wsUri, 
-    server, 
+    wsServer, 
+    httpServer,
     roomidEmitter, 
     raffleEmitter, 
     repository,

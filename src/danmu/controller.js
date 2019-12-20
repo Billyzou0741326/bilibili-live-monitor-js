@@ -25,6 +25,9 @@ class GuardController {
         });
         this.scheduledCheck = setInterval(() => {
             this.setupGuardMonitor();
+            const mem = process.memoryUsage();
+            const memTip = `Memory Usage: ${mem.heapUsed}/${mem.heapTotal} (ext ${mem.external})`;
+            cprint(memTip, colors.green);
             cprint(`Monitoring ${this.connections.size} rooms`, colors.green);
         }, 120 * 1000);
     }
@@ -33,6 +36,7 @@ class GuardController {
         this.scheduledCheck && clearInterval(this.scheduledCheck);
         this.scheduledCheck = null;
         this.connections.forEach((value, key) => {
+            value.removeAllListeners([ 'close' ]);
             value.close();
         });
         this.connections.clear();
@@ -60,7 +64,7 @@ class GuardController {
                 const roomid = roomInfo['roomid'];
                 const online = roomInfo['online'];
 
-                if (online > 20 
+                if (online > 0
                     && this.connections.has(roomid) === false
                     && this.recentlyClosed.includes(roomid) === false) {
 
@@ -161,14 +165,15 @@ class RaffleController {
             Bilibili.isLive(roomid).then((streaming) => {
                 if (streaming && !this.connections.has(areaid)) {
 
-                    let dmlistener = new RaffleMonitor(roomid, 0, areaid);
+                    const dmlistener = new RaffleMonitor(roomid, 0, areaid);
                     this.connections.set(areaid, dmlistener);
 
-                    let msg = `Setting up monitor @room ${roomid.toString().padEnd(11)}`
+                    const msg = `Setting up monitor @room ${roomid.toString().padEnd(13)}`
                             + `in ${this.areaname[areaid]}区`;
                     cprint(msg, colors.green);
                     dmlistener.on('close', () => {
-                        cprint(`@room ${roomid} in ${this.areaname[areaid]}区 is closed.`, colors.yellow);
+                        const reason = `@room ${roomid} in ${this.areaname[areaid]}区 is closed.`;
+                        cprint(reason, colors.yellow);
                         this.connections.delete(areaid);
                         this.recoverArea(areaid);
                     });
