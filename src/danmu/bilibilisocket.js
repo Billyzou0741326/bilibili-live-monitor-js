@@ -3,8 +3,6 @@
 const net = require('net');
 const EventEmitter = require('events').EventEmitter;
 
-const UTF8ArrayToStr = require('../util/conversion.js').UTF8ArrayToStr;
-const StrToUTF8Array = require('../util/conversion.js').StrToUTF8Array;
 const roomidEmitter = require('../global/config.js').roomidEmitter;
 const raffleEmitter = require('../global/config.js').raffleEmitter;
 const Bilibili = require('../bilibili.js');
@@ -230,21 +228,19 @@ class BilibiliSocket extends EventEmitter {
     }
 
     prepareData(cmd, str) {
-        const data = StrToUTF8Array(str);
-        const headerLength = 16;
-        const totalLength = headerLength + data.length;
-        
-        const buffer = Buffer.alloc(totalLength);
-        buffer.writeUInt32BE(totalLength, 0);
-        buffer.writeUInt16BE(headerLength, 4);
-        buffer.writeUInt16BE(1, 6);
-        buffer.writeUInt32BE(cmd, 8);
-        buffer.writeUInt32BE(1, 12);
 
-        const len = data.length;
-        for (let i = 0; i < len; ++i) {
-            buffer.writeUInt8(data[i], 16 + i);
-        }
+        const bufferBody = Buffer.from(str, 'utf8');
+        const headerLength = 16;
+        const totalLength = headerLength + bufferBody.length;
+
+        const bufferHeader = Buffer.alloc(16);
+        bufferHeader.writeUInt32BE(totalLength, 0);
+        bufferHeader.writeUInt16BE(headerLength, 4);
+        bufferHeader.writeUInt16BE(1, 6);
+        bufferHeader.writeUInt32BE(cmd, 8);
+        bufferHeader.writeUInt32BE(1, 12);
+
+        const buffer = Buffer.concat([ bufferHeader, bufferBody ]);
 
         return buffer;
     }
@@ -262,6 +258,8 @@ class FixedGuardMonitor extends BilibiliSocket {
 
     onPkLottery(msg) {
         const data = msg['data'];
+        this.emitter && this.emitter.emit('gift', this.roomid);
+        /**
         const pkInfo = {
             'id': data['id'],
             'roomid': this.roomid,
@@ -269,6 +267,7 @@ class FixedGuardMonitor extends BilibiliSocket {
             'name': '大乱斗',
         };
         raffleEmitter && raffleEmitter.emit('pk', pkInfo);
+        */
     }
 
     onSpecialGift(msg) {

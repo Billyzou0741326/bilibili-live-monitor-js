@@ -5,6 +5,7 @@ const colors = require('colors/safe');
 const { roomidEmitter, raffleEmitter } = require('../global/config.js');
 const GuardBuilder = require('./guard.js');
 const GiftBuilder = require('./gift.js');
+const PKBuilder = require('./pk.js');
 const Bilibili = require('../bilibili.js');
 const config = require('../global/config.js');
 const cprint = require('../util/printer.js');
@@ -60,17 +61,18 @@ class RoomidHandler {
         const queue = Array.from(new Set(this.queue));
         this.queue = [];
         queue.forEach((roomid) => {
-            Bilibili.getRaffleInRoom(roomid).then((result) => {
+            Bilibili.appGetRaffleInRoom(roomid).then((result) => {
                 this.handleMessage(roomid, result);
             }).catch((error) => {
-                cprint(`${Bilibili.getRaffleInRoom.name} - ${error}`, colors.red);
+                cprint(`${Bilibili.appGetRaffleInRoom.name} - ${error}`, colors.red);
             });
         });
     }
 
     handleMessage(roomid, data) {
         let guards = data['data']['guard'];
-        let gifts = data['data']['gift'];
+        let gifts = data['data']['gift_list'];
+        let pks = data['data']['pk'];
 
         // Use setTimeout to wait for cool down
         guards = guards.map(g => {
@@ -81,12 +83,11 @@ class RoomidHandler {
                 .withRoomid(roomid)
                 .withType(g['keyword'])
                 .withName(guard_name)
-                .withExpireAt(g['time'] + Number.parseInt(new Date() / 1000))
+                .withExpireAt(g['time'] + Number.parseInt(0.001 * new Date()))
                 .build();
         });
         gifts = gifts.map(g => {
-            let gift_id = g['gift_id'];
-            let gift_name = this.gift_type[gift_id] || '未知';
+            let gift_name = g['title'] || '未知';
             return GiftBuilder.start()
                 .withId(g['raffleId'])
                 .withRoomid(roomid)
@@ -96,40 +97,32 @@ class RoomidHandler {
                 .withExpireAt(g['time'] + Number.parseInt(0.001 * new Date()))
                 .build();
         });
+        pks = pks.map(g => {
+            let gift_name = '大乱斗';
+            return PKBuilder.start()
+                .withId(g['id'])
+                .withRoomid(roomid)
+                .withType('pk')
+                .withName(gift_name)
+                .withExpireAt(g['time'] + Number.parseInt(0.001 * new Date()))
+                .build();
+        });
 
         guards.forEach((g) => {
-            const id = g.id;
-
-            if (!this.guard_history.has(id)) {
-                this.guard_history.add(id);
-                if (this.guard_history.size > 1000) {
-                    const len = this.guard_history.size;
-                    this.guard_history = Array.from(this.guard_history).splice(500);
-                    this.guard_history = new Set(this.guard_history);
-                }
-
-                // raffleEmitter.emit('guard', g['gift_data']);    // on 'guard'
-                raffleEmitter.emit('guard', g);
-            }
+            raffleEmitter.emit('guard', g);
         });
 
         gifts.forEach((g) => {
-            const id = g.id;
             let cool_down = g.wait;
             cool_down = cool_down > 0 ? cool_down : 0;
 
-            if (!this.gift_history.has(id)) {
-                this.gift_history.add(id);
-                if (this.gift_history.size > 400) {
-                    const len = this.gift_history.size;
-                    this.gift_history = Array.from(this.gift_history).splice(300);
-                    this.gift_history = new Set(this.gift_history);
-                }
+            setTimeout(() => {
+                raffleEmitter.emit('gift', g);
+            }, cool_down * 1000);
+        });
 
-                setTimeout(() => {
-                    raffleEmitter.emit('gift', g); // on 'gift'
-                }, cool_down * 1000);
-            }
+        pks.forEach((g) => {
+            raffleEmitter.emit('pk', g);
         });
     }
 }

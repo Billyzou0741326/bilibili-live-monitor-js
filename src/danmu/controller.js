@@ -12,8 +12,15 @@ const {
 
 class GuardController {
 
-    constructor(limit) {
+    /**
+     * @params  options     Object
+     *          limit       Integer
+     *          db          Database
+     */
+    constructor(options) {
+        const { limit, db } = options;
         this.limit = limit;
+        this.db = db || null;
         this.connections = new Map();
         this.scheduledCheck = null;
         this.recentlyClosed = [];
@@ -27,8 +34,8 @@ class GuardController {
             this.setupGuardMonitor();
             const mem = process.memoryUsage();
             const memTip = `Memory Usage: ${mem.heapUsed}/${mem.heapTotal} (ext ${mem.external})`;
-            cprint(memTip, colors.green);
             cprint(`Monitoring ${this.connections.size} rooms`, colors.green);
+            cprint(memTip, colors.green);
         }, 120 * 1000);
     }
 
@@ -100,6 +107,21 @@ class GuardController {
                         this.setupFixedMonitorAtRoom(roomid);
                     }
                 });
+                return null;
+            })
+            .catch(error => {
+                cprint(`${Bilibili.getFixedRooms.name} - ${error}`, colors.red);
+                return null;
+            })
+            .then(() => {
+                this.db && this.db.getRoomList().then(roomList => {
+                    roomList.forEach(roomid => {
+                        if (this.connections.has(roomid) === false) {
+                            this.setupFixedMonitorAtRoom(roomid);
+                        }
+                    });
+                });
+                return null;
             })
             .catch(error => {
                 cprint(`${Bilibili.getFixedRooms.name} - ${error}`, colors.red);

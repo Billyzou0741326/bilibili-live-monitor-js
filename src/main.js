@@ -3,8 +3,9 @@
  *  relationships are established
  */
 process.env.UV_THREAD_POOL_SIZE = 48;
+process.env['x'] = 'X-Remote-IP';
 
-const colors = require('colors');
+const colors = require('colors/safe');
 const express = require('express');
 const http = require('http');
 
@@ -14,9 +15,10 @@ const {
     RaffleController, GuardController } = require('./danmu/controller.js');
 const RoomidHandler = require('./handler/roomidhandler.js');    // 弹幕监听播报高能房间号
 const RaffleHandler = require('./handler/rafflehandler.js');    // 高能监听播报抽奖数据
+const History = require('./handler/history.js');
+const Database = require('./db/database.js');
 const settings = require('./settings.json');
 const config = require('./global/config.js');
-const repository = config.repository;
 const cprint = require('./util/printer.js');
 const Server = require('./server/host.js');
 const router = require('./server/router.js');
@@ -28,21 +30,23 @@ const router = require('./server/router.js');
     (function main() {
         cprint('bilibili-monitor[1.0.0] successfully launched', colors.green);
 
-        process.env['x'] = 'X-Remote-IP';
         read_args();
-        let limit = raise_nofile_limit();
+        const limit = raise_nofile_limit();
 
-        let raffleHandler = new RaffleHandler();
-        let roomidHandler = new RoomidHandler();
-        let guardController = new GuardController(limit);
-        let raffleController = new RaffleController();
-        let wsServer = new Server();
-        let expressApp = new express();
+        const db = new Database('record');
+        const history = new History(config.raffleEmitter);
+        const raffleHandler = new RaffleHandler({ history, db });
+        const roomidHandler = new RoomidHandler();
+        const guardController = new GuardController({ limit, db });
+        const raffleController = new RaffleController();
+        router.startRouter(history);
+        const wsServer = new Server();
+        const expressApp = new express();
 
         setupApp(expressApp);
         wsServer.run();
 
-        repository.run();
+        history.run();
         guardController.run();
         raffleController.run();
         raffleHandler.run();
@@ -54,7 +58,7 @@ const router = require('./server/router.js');
     function setupApp(expressApp) {
         const httpHost = config['httpServer'].host;
         const httpPort = config['httpServer'].port;
-        expressApp.use('/', router);
+        expressApp.use('/', router.getRouter());
         const server = http.createServer(expressApp).listen(httpPort, httpHost);
         server.on('error', error => {
             if (error.code === 'EADDRINUSE') {

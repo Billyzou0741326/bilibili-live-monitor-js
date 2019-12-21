@@ -2,9 +2,7 @@
 
     'use strict';
 
-    const { repository } = require('../global/config.js');
-
-    function guardHandler(request, response) {
+    function guardHandler(repository, request, response) {
         const guards = repository.repo['guard'];
         response.jsonp(guards);
     }
