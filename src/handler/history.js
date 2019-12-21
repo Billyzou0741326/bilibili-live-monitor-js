@@ -4,8 +4,13 @@
 
     class History {
 
-        constructor(raffleEmitter) {
+        constructor() {
             this.repo = {
+                'guard': [],
+                'gift': [],
+                'pk': [],
+            };
+            this.almostExpire = {
                 'guard': [],
                 'gift': [],
                 'pk': [],
@@ -21,7 +26,6 @@
                 'pk': null,
             };
 
-            this.raffleEmitter = raffleEmitter || null;
             this.running = false;
 
             this.bind();
@@ -32,7 +36,10 @@
         }
 
         get(item) {
-            return this.repo[item];
+            return {
+                'valid': this.repo[item],
+                'almostExpire': this.almostExpire[item],
+            };
         }
 
         run() {
@@ -52,14 +59,16 @@
 
         stop() {
             if (this.running === true) {
-                this.raffleEmitter.removeListener('guard', this.addGift);
                 Object.keys(this.checkTask).forEach(key => {
                     const task = this.checkTask[key];
                     task && clearInterval(task);
                     this.checkTask[key] = null;
                 });
                 this.repo.keys().forEach(key => {
-                    this.repo[key] = null;
+                    this.repo[key] = [];
+                });
+                this.almostExpire.keys().forEach(key => {
+                    this.almostExpire[key] = [];
                 });
                 this.running = false;
             }
@@ -97,8 +106,17 @@
 
             this.repo[target] = this.repo[target].filter(gift => {
                 const someTime = expireIn + Number.parseInt(0.001 * new Date());
-                return !gift.expireBefore(someTime);
+                const nearExpired = gift.expireBefore(someTime);
+                if (nearExpired)
+                    this.almostExpire[target].push(gift);
+                return !nearExpired;
             });
+            if (this.almostExpire[target].length > 50) {
+                this.almostExpire[target] = this.almostExpire[target].filter(gift => {
+                    const expired = gift.expired();
+                    return !expired;
+                });
+            }
         }
 
     }
