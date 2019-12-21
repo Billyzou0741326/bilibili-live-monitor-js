@@ -49,13 +49,7 @@ class RaffleHandler {
     }
 
     onGuard(guard) {
-        let valid = true;
-        if (this.history !== null) {
-            const guardList = this.history.get('guard');
-            if (guardList) {
-                valid = !guardList.some(g => (g.id === guard.id));
-            }
-        }
+        const valid = this.checkUnique(guard, 'guard');
         if (valid) {
             cprint(
                 `${guard.id.toString().padEnd(13)}`
@@ -70,13 +64,7 @@ class RaffleHandler {
     }
 
     onGift(gift) {
-        let valid = true;
-        if (this.history !== null) {
-            const giftList = this.history.get('gift');
-            if (giftList) {
-                valid = !giftList.some(g => (g.id === gift.id));
-            }
-        }
+        const valid = this.checkUnique(gift, 'gift');
         if (valid) {
             cprint(
                 `${gift.id.toString().padEnd(13)}`
@@ -90,13 +78,7 @@ class RaffleHandler {
     }
 
     onPK(pk) {
-        let valid = true;
-        if (this.history) {
-            const pkList = this.history.get('pk');
-            if (pkList) {
-                valid = !pkList.some(g => (g.id === pk.id));
-            }
-        }
+        const valid = this.checkUnique(pk, 'pk');
         if (valid) {
             cprint(
                 `${pk['id'].toString().padEnd(13)}`
@@ -119,6 +101,24 @@ class RaffleHandler {
             colors.cyan
         );
     }
+
+    checkUnique(someGift, type) {
+        let valid = true;
+        if (this.history) {
+            const giftList = this.history.get(type);
+            if (!giftList) return true;
+
+            const validList = giftList.valid;
+            const nearExpiredList = giftList.almostExpire;
+            if (validList) {
+                valid = !validList.some(g => (g.id === someGift.id));
+                if (valid && nearExpiredList) 
+                    valid = !nearExpiredList.some(g => (g.id === someGift.id));
+            }
+        }
+        return valid;
+    }
+
 }
 
 module.exports = RaffleHandler;
