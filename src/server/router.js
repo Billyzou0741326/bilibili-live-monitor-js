@@ -7,8 +7,30 @@
 
     const api = require('./api.js');
 
-    router.get('/guard', api.guardHandler);
+    class RT {
 
-    module.exports = router;
+        constructor() {
+            this.started = false;
+            this.router = router;
+        }
+
+        startRouter(history) {
+            const guardHandler = (request, response) => {
+                api.guardHandler(history, request, response);
+            };
+            if (this.started === false) {
+                this.router.get('/guard', guardHandler);
+                this.started = true;
+            }
+        }
+
+        getRouter() {
+            return this.router;
+        }
+    }
+
+    const rt = new RT();
+
+    module.exports = rt;
 
 })();

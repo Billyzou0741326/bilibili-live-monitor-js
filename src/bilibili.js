@@ -6,22 +6,28 @@
     // ------------------------------- Includes -------------------------------
     const http = require('http');
     const https = require('https');
+    const crypto = require('crypto');
     const querystring = require('querystring');
     const cprint = require('./util/printer.js');
     const RateLimiter = require('./util/ratelimiter.js');
+    const { 
+        appCommon,
+        appSecret,
+        appHeaders,
+        webHeaders, } = require('./global/config.js');
 
     const httpsAgent = (() => {
         const options = {
-            'keepAlive': true, 
-            'maxFreeSockets': 512, 
+            'keepAlive': true,
+            'maxFreeSockets': 10,
         };
         return new https.Agent(options);
     })();
 
     const httpAgent = (() => {
         const options = {
-            'keepAlive': true, 
-            'maxFreeSockets': 512, 
+            'keepAlive': true,
+            'maxFreeSockets': 256,
         };
         return new http.Agent(options);
     })();
@@ -100,6 +106,30 @@
             return doRequest();
         }
 
+        static appGetRaffleInRoom(roomid) {
+            const host = 'api.live.bilibili.com';
+            const path = '/xlive/lottery-interface/v1/lottery/getLotteryInfo';
+            const method = 'GET';
+            const headers = {};
+            Object.assign(headers, appHeaders);
+            headers[process.env['x']] = '127.0.0.1';
+
+            const params = {};
+            Object.assign(params, appCommon);
+            params['roomid'] = roomid;
+            params['ts'] = Number.parseInt(0.001 * new Date());
+            const querystr = Bilibili.parseAppParams(sort(params));
+
+            const options = {
+                host,
+                'path': `${path}?${querystr}`,
+                method,
+                headers,
+            };
+
+            return Bilibili.request(options, false);
+        }
+
         /** Check for lottery in room ``roomid``
          *
          */
@@ -107,13 +137,9 @@
             const host = 'api.live.bilibili.com';
             const path = '/xlive/lottery-interface/v1/lottery/Check';
             const method = 'GET';
+            const headers = webHeaders;
             const params = { 'roomid': roomid, };
             const query = querystring.stringify(params);
-            const headers = {
-                'Cookie': cookies !== null ? cookies : '', 
-                'Connection': 'keep-alive',
-            };
-            headers[process.env['x']] = '127.0.0.1';
             const options = {
                 'host': host,
                 'path': `${path}?${query}`,
@@ -176,7 +202,7 @@
             };
             const query = querystring.stringify(params);
             const method = 'GET';
-            const headers = { 'Connection': 'close' };
+            const headers = webHeaders;
             const options = {
                 'host': url,
                 'path': `${path}?${query}`,
@@ -195,9 +221,7 @@
             const url = 'api.live.bilibili.com';
             const path = '/room/v3/area/getRoomList';
             const method = 'GET';
-            const headers = {
-                'Connection': 'keep-alive',
-            };
+            const headers = webHeaders;
             const page_size = size;
             const params = {
                 'parent_area_id': areaid, 
@@ -205,7 +229,6 @@
                 'page_size': size > 99 || size < 0 ? 99 : size, 
                 'sort_type': 'online',
             };
-            headers[process.env['x']] = '127.0.0.1';
 
             let promises = [];
 
@@ -284,9 +307,7 @@
             };
             const query = querystring.stringify(params);
             const method = 'GET';
-            const headers = {
-                'Connection': 'close', 
-            };
+            const headers = webHeaders;
             const options = {
                 'host': url, 
                 'path': `${path}?${query}`,
@@ -310,9 +331,7 @@
             const path = '/gift/v4/Live/giftConfig';
             const params = {};
             const method = 'GET';
-            const headers = {
-                'Connection': 'close', 
-            };
+            const headers = webHeaders;
             const options = {
                 'host': url,
                 'path': path,
@@ -333,9 +352,7 @@
                 'sort_type': 'online', 
             };
             const method = 'GET';
-            const headers = {
-                'Connection': 'close', 
-            };
+            const headers = webHeaders;
             const areas = [ 1, 2, 3, 4, 5, 6, ];
 
             let promises = [];
@@ -365,10 +382,7 @@
             const params = {
                 'id': roomid, 
             };
-            const headers = {
-                'Connection': 'keep-alive',
-            };
-            headers[process.env['x']] = '127.0.0.1';
+            const headers = webHeaders;
             const query = querystring.stringify(params);
             const options = {
                 'host': url, 
@@ -386,7 +400,34 @@
                 });
             });
         }
+
+        static appSign(string) {
+            return crypto.createHash('md5').update(string+appSecret).digest('hex');
+        }
+
+        static parseAppParams(params) {
+            const pre_paramstr = Bilibili.formatForm(params);
+            const sign = Bilibili.appSign(pre_paramstr);
+            const paramstr = `${pre_paramstr}&sign=${sign}`;
+            return paramstr;
+        }
+
+        static formatForm(form) {
+            const formattedForm = querystring.stringify(form, '&', '=');
+            return formattedForm;
+        }
     }
+
+    /**
+     * Sort the properties according to alphabetical order
+     */
+    const sort = (object) => {
+        const sorted = Object.create(null);
+        Object.keys(object).sort().forEach(key => {
+            sorted[key] = object[key];
+        });
+        return sorted;
+    };
 
     // const rateLimiter = new RateLimiter(Bilibili);
     const rateLimiter = Bilibili;

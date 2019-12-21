@@ -4,20 +4,20 @@
 
     const GuardBuilder = require('./guard.js');
 
-    class GiftBuilder extends GuardBuilder {
+    class PKBuilder extends GuardBuilder {
 
         static start() {
-            return new GiftBuilder();
+            return new PKBuilder();
         }
 
         build() {
             super.build();
-            return new Gift(this);
+            return new PK(this);
         }
 
     }
 
-    class Gift {
+    class PK {
 
         constructor(options) {
             // id, roomid, type, name, expireAt
@@ -35,6 +35,6 @@
 
     }
 
-    module.exports = GiftBuilder;
+    module.exports = PKBuilder;
 
 })();
