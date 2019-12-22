@@ -2,6 +2,7 @@
 
     'use strict';
 
+    const os = require('os');
     const path = require('path');
     const PouchDB = require('pouchdb');
     PouchDB.plugin(require('pouchdb-find'));
@@ -18,9 +19,10 @@
     db.createIndex(index);
     // */
 
-    const db = new Database('record');
+    const db = new Database('record' + '-' + (os.hostname() || ''));
     db.getRoomList().then(list => {
         console.log(list);
+        console.log(list.length);
     });
 
 })();

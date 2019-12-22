@@ -9,6 +9,8 @@ const {
     GuardMonitor, 
     FixedGuardMonitor, 
     RaffleMonitor } = require('../danmu/bilibilisocket.js');
+const {
+    sleep } = require('../util/utils.js');
 
 class GuardController {
 
@@ -24,19 +26,36 @@ class GuardController {
         this.connections = new Map();
         this.scheduledCheck = null;
         this.recentlyClosed = [];
+        this.roomWaitList = {
+            'fixed': new Set(),
+            'dynamic': new Set(),
+        };
     }
 
     run() {
-        this.setupFixedMonitor().then(() => {
-            this.setupGuardMonitor();
-        });
+        this.initialSetup();
         this.scheduledCheck = setInterval(() => {
-            this.setupGuardMonitor();
+            this.collectRooms('dynamic').then(() => {
+                return this.setupDynamic().then(() => this.roomWaitList['dynamic'].clear());
+            });
             const mem = process.memoryUsage();
             const memTip = `Memory Usage: ${mem.heapUsed}/${mem.heapTotal} (ext ${mem.external})`;
             cprint(`Monitoring ${this.connections.size} rooms`, colors.green);
             cprint(memTip, colors.green);
         }, 120 * 1000);
+    }
+
+    initialSetup() {
+        this.collectRooms('all').then(() => {
+            this.db && this.db.destroy().then(() => this.db.setup());
+            return this.setupFixed().then(() => {
+                this.roomWaitList['fixed'].clear();
+            });
+        }).then(() => {
+            return this.setupDynamic().then(() => {
+                this.roomWaitList['dynamic'].clear();
+            });
+        });
     }
 
     close() {
@@ -49,87 +68,126 @@ class GuardController {
         this.connections.clear();
     }
 
-    setupGuardMonitor() {
-        const GLOBAL = 0;
+    collectRooms(settings='all') {
+        const waitList = this.roomWaitList;
+        const fixedList = waitList['fixed'];
+        const dynamicList = waitList['dynamic'];
 
-        if (this.limit && this.connections.size > this.limit - 100) {
-            cprint(`Reaching limit ${this.limit}, stops connecting`, colors.yellow);
-            return;
-        }
+        const getFixed = (settings === 'all' || settings === 'fixed');
+        const getDynamic = (settings === 'all' || settings === 'dynamic');
 
-        if (this.recentlyClosed.length > 30) {
-            this.recentlyClosed.splice(20);
-        }
+        const addToList = (dest) => {
+            return (source) => {
+                source && source.forEach(roomid => dest.add(roomid));
+                return null;
+            };
+        };
+        const reportError = (returnValue) => {
+            return (error) => {
+                cprint(`${error}`, colors.red);
+                return returnValue;
+            };
+        };
+        const getFixedFromDB = () => {
+            // 数据库获取永久房间
+            let result = [];
+            if (getFixed) {
+                result = this.db && this.db.getRoomList().catch(reportError([]));
+            }
+            return Promise.resolve(result);
+        };
+        const getFixedFromAPI = () => {
+            // b站大航海榜api获取永久房间
+            let result = [];
+            if (getFixed) {
+                result = Bilibili.getFixedRooms().catch(reportError([]));
+            }
+            return Promise.resolve(result);
+        };
+        const getDynamicFromAPI = () => {
+            // b站api获取动态房间
+            let result = []
+            const GLOBAL = 0;
+            if (getDynamic) {
+                result = Bilibili.getRoomsInArea(GLOBAL).catch(reportError([]));
+            }
+            return result;
+        };
 
-        let promise = Bilibili.getRoomsInArea(GLOBAL);
+        return getFixedFromAPI()
+            .then(addToList(fixedList))
+            .then(getFixedFromDB)
+            .then(addToList(fixedList))
+            .then(getDynamicFromAPI)
+            .then(roomInfoList => {
+                // 源自b站API, 带有online人气 (可过滤)
+                roomInfoList.forEach(roomInfo => {
+                    const roomid = roomInfo['roomid'];
+                    const online = roomInfo['online'];
 
-        promise.then(roomInfoList => {
-
-            // { 房间号, 在线人数 }
-            // { 'roomid': roomid, 'online': online }
-            roomInfoList.forEach(roomInfo => {
-                const roomid = roomInfo['roomid'];
-                const online = roomInfo['online'];
-
-                if (online > 0
-                    && this.connections.has(roomid) === false
-                    && this.recentlyClosed.includes(roomid) === false) {
-
-                    let dmlistener = new GuardMonitor(roomid, 0);
-                    this.connections.set(roomid, dmlistener);
-                    dmlistener.on('close', () => {
-                        this.connections.delete(roomid);
-                        this.recentlyClosed.push(roomid);
-
-                        // 上舰人数超过3，加入永久监听
-                        if (dmlistener.guardCount > 3) {
-                            this.setupFixedMonitorAtRoom(roomid);
-                        }
-                        if (config.verbose === true)
-                            cprint(`@room ${roomid} socket emitted close.`, colors.yellow);
-                    });
-                    dmlistener.run();
-                }
+                    if (fixedList.has(roomid) === false)
+                        dynamicList.add(roomid);
+                });
+            })
+            .then(addToList(dynamicList))
+            .catch(error => {
+                cprint(`${this.collectRooms.name} - ${error}`, colors.red);
             });
-
-        }).catch((error) => {
-
-            cprint(`${Bilibili.getRoomsInArea.name} - ${error}`, colors.red);
-        });
-
     }
 
-    setupFixedMonitor() {
-        return Bilibili.getFixedRooms()
-            .then(roomList => {
-                roomList.forEach(roomid => {
-                    if (this.connections.has(roomid) === false) {
-                        this.setupFixedMonitorAtRoom(roomid);
-                    }
-                });
-                return null;
-            })
-            .catch(error => {
-                cprint(`${Bilibili.getFixedRooms.name} - ${error}`, colors.red);
-                return null;
-            })
-            .then(() => {
-                this.db && this.db.getRoomList().then(roomList => {
-                    roomList.forEach(roomid => {
-                        if (this.connections.has(roomid) === false) {
-                            this.setupFixedMonitorAtRoom(roomid);
-                        }
-                    });
-                });
-                return null;
-            })
-            .catch(error => {
-                cprint(`${Bilibili.getFixedRooms.name} - ${error}`, colors.red);
-            });
+    setupFixed() {
+        const fixedList = Array.from(this.roomWaitList['fixed']);
+
+        const tasks = fixedList.map((roomid, index) => {
+            return (async () => {
+                await sleep(index * 50);    // 50ms 间隔
+                this.setupFixedMonitorAtRoom(roomid);
+            })();
+        });
+        return Promise.all(tasks);
+    }
+
+    setupDynamic() {
+        const dynamicList = Array.from(this.roomWaitList['dynamic']);
+
+        const tasks = dynamicList.map((roomid, index) => {
+            return (async () => {
+                await sleep(index * 20);    // 20ms 间隔
+                this.setupDynamicMonitorAtRoom(roomid);
+            })();
+        });
+
+        return Promise.all(tasks).then(() => {
+            if (this.recentlyClosed.length > 30) {
+                this.recentlyClosed.splice(20);
+            }
+        });
+    }
+
+    setupDynamicMonitorAtRoom(roomid) {
+
+        if (this.recentlyClosed.includes(roomid)
+            || this.connections.has(roomid)) return null;
+
+        const dmlistener = new GuardMonitor(roomid, 0);
+        this.connections.set(roomid, dmlistener);
+        dmlistener.on('close', () => {
+            this.connections.delete(roomid);
+            this.recentlyClosed.push(roomid);
+
+            // 上舰人数超过3，加入永久监听
+            if (dmlistener.guardCount > 3) {
+                this.setupFixedMonitorAtRoom(roomid);
+            }
+        });
+        dmlistener.run();
     }
 
     setupFixedMonitorAtRoom(roomid) {
-        let dmlistener = new FixedGuardMonitor(roomid, 0);
+
+        if (this.connections.has(roomid)) return null;
+
+        const dmlistener = new FixedGuardMonitor(roomid, 0);
         this.connections.set(roomid, dmlistener);
         dmlistener.on('close', () => {
             this.connections.delete(roomid);
