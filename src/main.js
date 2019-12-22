@@ -8,6 +8,7 @@ process.env['x'] = 'X-Remote-IP';
 const colors = require('colors/safe');
 const express = require('express');
 const http = require('http');
+const os = require('os');
 
 const {
     RaffleMonitor, GuardMonitor } = require('./danmu/bilibilisocket.js');
@@ -33,7 +34,8 @@ const router = require('./server/router.js');
         read_args();
         const limit = raise_nofile_limit();
 
-        const db = new Database('record');
+        const dbSuffix = '-' + (os.hostname() || '');
+        const db = new Database('record' + dbSuffix);
         const history = new History(config.raffleEmitter);
         const raffleHandler = new RaffleHandler({ history, db });
         const roomidHandler = new RoomidHandler();
