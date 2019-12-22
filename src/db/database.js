@@ -40,14 +40,18 @@
         }
 
         getRoomList() {
+            if (!this.db) return Promise.resolve([]);
+
+            const oneDay = 1000 * 60 * 60 * 24;
             const index = {
                 'index': {
-                    'fields': [ 'guard' ],
+                    'fields': [ 'guard', 'updated_at' ],
                 },
             };
             const query = {
                 'selector': {
                     'guard': { $gte: 3 },
+                    'updated_at': { $gt: (new Date() - oneDay) },
                     // 'guard': { $gt: null },
                 },
                 'fields': [ '_id', 'guard' ],
@@ -61,13 +65,25 @@
                 return info.docs.map(entry => entry['_id']);
             }).catch(error => {
 
-                console.log(error);
+                cprint(`Error(database): ${error.message}`, colors.red);
                 return [];
             });
         }
 
+        destroy() {
+            let result = null;
+            if (this.db) {
+                result = this.db.destroy().catch(error => {
+                    cprint(`Error: ${error.message}`, colors.red);
+                });
+                this.db = null;
+            }
+            return Promise.resolve(result);
+        }
+
         close() {
-            this.db.close();
+            this.db && this.db.close();
+            this.db = null;
         }
     }   
 
