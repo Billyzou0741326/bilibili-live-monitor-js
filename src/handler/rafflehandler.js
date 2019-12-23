@@ -60,6 +60,7 @@ class RaffleHandler {
             );
             this.db && this.db.update(guard.roomid, 'guard');
             this.history && this.history.addGift(guard);
+            this.emitter.emit('any', guard);
         }
     }
 
@@ -74,6 +75,7 @@ class RaffleHandler {
                 colors.cyan
             );
             this.history && this.history.addGift(gift);
+            this.emitter.emit('any', gift);
         }
     }
 
@@ -88,6 +90,7 @@ class RaffleHandler {
                 colors.cyan
             );
             this.history && this.history.addGift(pk);
+            this.emitter.emit('any', pk);
         }
     }
 
@@ -100,6 +103,7 @@ class RaffleHandler {
             + `${storm['id']}`,
             colors.cyan
         );
+        this.emitter.emit('any', storm);
     }
 
     checkUnique(someGift, type) {
