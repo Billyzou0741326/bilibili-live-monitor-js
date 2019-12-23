@@ -88,21 +88,8 @@ class Host {
         }, 20 * 1000);
 
         raffleEmitter
-            .on('gift', (gift) => {
-
+            .on('any', (gift) => {
                 this.broadcast(this.parseMessage(gift));
-            })
-            .on('guard', (guard) => {
-
-                this.broadcast(this.parseMessage(guard));
-            })
-            .on('pk', (pk) => {
-
-                this.broadcast(this.parseMessage(pk));
-            })
-            .on('storm', (storm) => {
-
-                this.broadcast(this.parseMessage(storm));
             });
     }
 
