@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+   <meta charset="utf-8">
+   <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+      <script type="text/javascript">
+      var reader = { 
+  readAs: function(type,blob,cb){
+	var r = new FileReader();
+	r.onloadend = function(){
+      if(typeof(cb) === 'function') {
+        cb.call(r,r.result);
+      }
+    }
+    try{
+      r['readAs'+type](blob);
+    }catch(e){}
+  }
+}
+
+function parseBlob(blob){
+  var stringVar;
+  reader.readAs('Text',blob.slice(16,blob.size,'text/plain;charset=UTF-8'),function(result){
+    stringVar = result;
+    console.log(stringVar);
+    $(document).ready(function(){
+    $("ol").append( "<li>" + stringVar + "</li>");
+    });
+  });
+}
+               // 打开一个 web socket
+               var ws = new WebSocket("ws://127.0.0.1:8999");                
+               ws.onopen = function()
+               {
+                  // Web Socket 已连接上，使用 send() 方法发送数据
+                  console.log('ok');
+               };
+                
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  parseBlob(received_msg);
+                  
+               };
+                
+               ws.onclose = function()
+               { 
+                  // 关闭 websocket
+                  alert("连接已关闭..."); 
+               }; 
+
+      </script>
+        
+   </head>
+   <body>
+   
+      <div id="sse">
+        test
+      </div>
+      <ol><li>list<li</ol>
+   </body>
+</html>
