@@ -19,9 +19,6 @@ const httpServer = {
     'port': settings['httpServer']['port'] || 9001,
 };
 
-const roomidEmitter = new EventEmitter();
-const raffleEmitter = new EventEmitter();
-
 const verbose = false;
 const debug = false;
 
@@ -62,8 +59,6 @@ module.exports = {
     wsUri,
     wsServer,
     httpServer,
-    roomidEmitter,
-    raffleEmitter,
     appCommon,
     appHeaders,
     appSecret,

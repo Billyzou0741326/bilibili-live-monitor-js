@@ -5,10 +5,8 @@
   "dependencies": {
     "colors": "^1.4.0",
     "express": "^4.17.1",
+    "pm2": "^4.2.1",
     "posix": "^4.1.2",
-    "pouchdb": "^7.1.1",
-    "pouchdb-find": "^7.1.1",
-    "pouchdb-upsert": "^2.2.0",
     "ws": "^7.2.0"
   },
   "devDependencies": {},
