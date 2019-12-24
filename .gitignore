@@ -5,3 +5,4 @@
 **/test*
 **/*.pem
 **/record*
+**/.nfs*

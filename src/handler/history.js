@@ -35,10 +35,25 @@
             this.addGift = this.addGift.bind(this);
         }
 
-        get(item) {
+        isUnique(type, someGift) {
+            const giftList = this.get(type);
+            if (!giftList) return true;
+
+            let valid = true;
+            const validList = giftList.valid;
+            const nearExpiredList = giftList.almostExpire;
+            if (validList) {
+                valid = !validList.some(g => (g.id === someGift.id));
+                if (valid && nearExpiredList) 
+                    valid = !nearExpiredList.some(g => (g.id === someGift.id));
+            }
+            return valid;
+        }
+
+        get(type) {
             return {
-                'valid': this.repo[item],
-                'almostExpire': this.almostExpire[item],
+                'valid': this.repo[type],
+                'almostExpire': this.almostExpire[type],
             };
         }
 
@@ -75,15 +90,27 @@
         }
 
         addGift(gift) {
+            const installExpiration = (g) => {
+                g.expired = () => {
+                    return Number.parseInt(0.001 * new Date()) >= g.expireAt;
+                };
+                g.expireBefore = (time) => {
+                    return g.expireAt < time;
+                };
+            };
+
             if (gift.type === 'guard') {
 
+                installExpiration(gift);
                 this.repo.guard.push(gift);
             } else if (gift.type === 'pk') {
 
+                installExpiration(gift);
                 this.repo.pk.push(gift);
             } else if (gift.type === 'storm') {
             } else {
 
+                installExpiration(gift);
                 this.repo.gift.push(gift);
             }
         }

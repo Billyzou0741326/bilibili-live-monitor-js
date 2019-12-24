@@ -32,7 +32,6 @@
         return new http.Agent(options);
     })();
 
-    process.env['x'] = process.env['x'] || 'X-Remote-IP';
 
 
     /** Emits requests to the bilibili API */
@@ -112,7 +111,6 @@
             const method = 'GET';
             const headers = {};
             Object.assign(headers, appHeaders);
-            headers[process.env['x']] = '127.0.0.1';
 
             const params = {};
             Object.assign(params, appCommon);

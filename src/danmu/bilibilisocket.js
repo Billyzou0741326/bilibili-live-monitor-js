@@ -3,42 +3,39 @@
 const net = require('net');
 const EventEmitter = require('events').EventEmitter;
 
-const roomidEmitter = require('../global/config.js').roomidEmitter;
-const raffleEmitter = require('../global/config.js').raffleEmitter;
 const Bilibili = require('../bilibili.js');
 const config = require('../global/config.js');
 const wsUri = require('../global/config.js').wsUri;
 const cprint = require('../util/printer.js');
 const colors = require('colors/safe');
 
-class BilibiliSocket extends EventEmitter {
+class AbstractBilibiliTCP extends EventEmitter {
 
-    constructor(roomid, uid) {
+    constructor(roomid) {
         super();
+        this.setMaxListeners(15);
 
         this.host = wsUri.host;
         this.port = wsUri.port;
 
-        this.roomid = roomid;
-        this.uid = uid;
+        this.roomid = roomid || 0;
         this.socket = null;
-        this.emitter = roomidEmitter;
         this.closed_by_user = false;
 
         this.handshake = this.prepareData(7, JSON.stringify({
             'roomid': this.roomid, 
-            'uid': this.uid, 
             'platform': 'web',
             'clientver': '1.8.12',
         }));
         this.heartbeat = this.prepareData(2, '');
         this.heartbeatTask = null;
+        this.healthCheck = null;
 
         this.buffer = Buffer.alloc(0);
         this.totalLength = -1;
 
-        this.healthCheck = null;
         this.lastRead = 0;
+
 
         this.bind();
     }
@@ -52,6 +49,13 @@ class BilibiliSocket extends EventEmitter {
     }
 
     reset() {
+        this.heartbeatTask && clearInterval(this.heartbeatTask);
+        this.heartbeatTask = null;
+        this.healthCheck && clearInterval(this.healthCheck);
+        this.healthCheck = null;
+        (this.socket 
+            && this.socket.unref().end().destroy() 
+            && (this.socket = null));
         this.buffer = Buffer.alloc(0);
         this.totalLength = -1;
     }
@@ -69,19 +73,28 @@ class BilibiliSocket extends EventEmitter {
     }
 
     onConnect() {
-        if (config.verbose === true)
-            cprint(`@room ${this.roomid} connected`, colors.green);
         this.socket && this.socket.write(this.handshake);
         this.healthCheck = setInterval(() => {
-            if (new Date() - this.lastRead > 35 * 1000)
+            if (+new Date() - this.lastRead > 35 * 1000)
                 this.close(false);
         }, 45 * 1000);  // 每45秒检查读取状态 如果没读取到任何信息即重连
     }
 
     onError(error) {
-        this.close(false);
-        if (config.verbose === true)
-            cprint(`@room ${this.roomid} observed an error: ${error.message}`, colors.red);
+    }
+
+    close(closed_by_us=true) {
+        this.closed_by_user = closed_by_us;
+        this.reset();
+    }
+
+    onClose() {
+        this.reset();
+        if (this.closed_by_user === false) {
+            this.run();
+        } else {
+            this.emit('close');
+        }
     }
 
     onData(buffer) {
@@ -125,6 +138,39 @@ class BilibiliSocket extends EventEmitter {
     }
 
     onMessage(buffer) {
+    }
+
+    prepareData(cmd, str) {
+
+        const bufferBody = Buffer.from(str, 'utf8');
+        const headerLength = 16;
+        const totalLength = headerLength + bufferBody.length;
+
+        const bufferHeader = Buffer.alloc(16);
+        bufferHeader.writeUInt32BE(totalLength, 0);
+        bufferHeader.writeUInt16BE(headerLength, 4);
+        bufferHeader.writeUInt16BE(1, 6);
+        bufferHeader.writeUInt32BE(cmd, 8);
+        bufferHeader.writeUInt32BE(1, 12);
+
+        const buffer = Buffer.concat([ bufferHeader, bufferBody ]);
+
+        return buffer;
+    }
+}
+
+class BilibiliSocket extends AbstractBilibiliTCP {
+
+    constructor(roomid) {
+        super(roomid);
+    }
+
+    run() {
+        super.run();
+    }
+
+    onMessage(buffer) {
+        super.onMessage(buffer);
         const totalLength = buffer.readUInt32BE(0);
         const headerLength = buffer.readUInt16BE(4);
         const cmd = buffer.readUInt32BE(8);
@@ -151,36 +197,6 @@ class BilibiliSocket extends EventEmitter {
         }
     }
 
-    onClose() {
-        const color = this.closed_by_user ? colors.green : colors.red;
-        if (config.verbose === true)
-            cprint(`@room ${this.roomid} lost connection.`, color);
-        this.heartbeatTask && clearInterval(this.heartbeatTask);
-        this.heartbeatTask = null;
-        this.healthCheck && clearInterval(this.healthCheck);
-        this.healthCheck = null;
-        (this.socket 
-            && this.socket.unref().end().destroy() 
-            && (this.socket = null));
-        if (this.closed_by_user === false) {
-            this.run();
-        } else {
-            this.emit('close');
-        }
-    }
-
-    close(closed_by_us=true) {
-        this.closed_by_user = closed_by_us;
-        this.heartbeatTask && clearInterval(this.heartbeatTask);
-        this.heartbeatTask = null;
-        this.healthCheck && clearInterval(this.healthCheck);
-        this.healthCheck = null;
-        (this.socket 
-            && this.socket.unref().end().destroy() 
-            && this.socket.destroyed
-            && (this.socket = null));
-    }
-
     processMsg(msg) {
         if (msg['scene_key'])
             msg = msg['msg'];
@@ -188,13 +204,14 @@ class BilibiliSocket extends EventEmitter {
         let cmd = msg['cmd'];
         switch (cmd) {
             case 'NOTICE_MSG':
-                if (config.verbose === true) 
-                    cprint(msg['msg_common'], colors.cyan);
                 this.onNoticeMsg(msg);
                 break;
             case 'SPECIAL_GIFT':
                 this.onSpecialGift(msg);
                 break;
+            case 'ANCHOR_LOT_START':
+                break;
+                this.onAnchor(msg);
             case 'PK_LOTTERY_START':
                 this.onPkLottery(msg);
                 break;
@@ -207,6 +224,13 @@ class BilibiliSocket extends EventEmitter {
             default:
                 break;
         }
+    }
+
+    onGuard(msg) {
+        this.emit('guard');
+    }
+
+    onAnchor(msg) {
     }
 
     onPkLottery(msg) {
@@ -227,24 +251,6 @@ class BilibiliSocket extends EventEmitter {
     onPopularity(popularity) {
     }
 
-    prepareData(cmd, str) {
-
-        const bufferBody = Buffer.from(str, 'utf8');
-        const headerLength = 16;
-        const totalLength = headerLength + bufferBody.length;
-
-        const bufferHeader = Buffer.alloc(16);
-        bufferHeader.writeUInt32BE(totalLength, 0);
-        bufferHeader.writeUInt16BE(headerLength, 4);
-        bufferHeader.writeUInt16BE(1, 6);
-        bufferHeader.writeUInt32BE(cmd, 8);
-        bufferHeader.writeUInt32BE(1, 12);
-
-        const buffer = Buffer.concat([ bufferHeader, bufferBody ]);
-
-        return buffer;
-    }
-
 }
 
 /**
@@ -252,22 +258,22 @@ class BilibiliSocket extends EventEmitter {
  */
 class FixedGuardMonitor extends BilibiliSocket {
 
-    constructor(roomid, uid) {
-        super(roomid, uid);
+    constructor(roomid) {
+        super(roomid);
+    }
+
+    onAnchor(msg) {
+        const data = msg['data'];
+        this.emit('anchor', this.roomid);
     }
 
     onPkLottery(msg) {
         const data = msg['data'];
-        this.emitter && this.emitter.emit('gift', this.roomid);
-        /**
-        const pkInfo = {
-            'id': data['id'],
-            'roomid': this.roomid,
-            'type': 'pk',
-            'name': '大乱斗',
-        };
-        raffleEmitter && raffleEmitter.emit('pk', pkInfo);
-        */
+        this.emit('roomid', this.roomid);
+    }
+
+    onGuard(msg) {
+        super.onGuard(msg);
     }
 
     onSpecialGift(msg) {
@@ -282,7 +288,7 @@ class FixedGuardMonitor extends BilibiliSocket {
                     'type': 'storm',
                     'name': '节奏风暴',
                 };
-                raffleEmitter && raffleEmitter.emit('storm', details);
+                this.emit('storm', details);
             }
         } catch (error) {
             cprint(`Error: ${error.message} - ${JSON.stringify(msg)}`, colors.red);
@@ -299,7 +305,7 @@ class FixedGuardMonitor extends BilibiliSocket {
                 // fall through
             case 3:
                 if (roomid === this.roomid) {
-                    this.emitter && this.emitter.emit('gift', roomid);
+                    this.emit('roomid', roomid);
 
                     if (msg_type === 3) this.onGuard(msg);
                 }
@@ -315,22 +321,29 @@ class FixedGuardMonitor extends BilibiliSocket {
  */
 class GuardMonitor extends FixedGuardMonitor {
 
-    constructor(roomid, uid) {
-        super(roomid, uid);
+    constructor(roomid) {
+        super(roomid);
         this.offTimes = 0;
         this.guardCount = 0;
-        // 检测到10个以上的上舰信息转为Fixed
+    }
+
+    toFixed() {
+        return this.guardCount > 1;
     }
 
     onGuard(msg) {
+        super.onGuard(msg);
         ++this.guardCount;
+        if (this.toFixed()) {
+            this.close();
+        }
     }
 
     onPreparing(msg) {
 
         Bilibili.isLive(this.roomid).then((streaming) => {
             if (streaming === false) {
-                super.close();
+                this.close();
             }
         }).catch((error) => {
             cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
@@ -354,8 +367,8 @@ class GuardMonitor extends FixedGuardMonitor {
  */
 class RaffleMonitor extends BilibiliSocket {
 
-    constructor(roomid, uid, areaid=0) {
-        super(roomid, uid);
+    constructor(roomid, areaid=0) {
+        super(roomid);
         this.areaid = areaid;
     }
 
@@ -371,7 +384,7 @@ class RaffleMonitor extends BilibiliSocket {
             case 6:
                 // fall through
             case 8:
-                this.emitter && this.emitter.emit('gift', roomid);
+                this.emit('roomid', roomid);
                 break;
         }
     }
