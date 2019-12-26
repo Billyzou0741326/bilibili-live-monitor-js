@@ -14,7 +14,7 @@
             this.name = path.resolve(__dirname, name);
             this.setup();
 
-            this.roomInfo = null;
+            this.roomInfo = {};
             this.running = false;
             this.updateTask = null;
 
@@ -54,7 +54,7 @@
         }
 
         update() {
-            const data = JSON.stringify(this.roomInfo);
+            const data = JSON.stringify(this.roomInfo, null, 4);
             fs.writeFile(this.name, data, error => {
                 if (error) {
                     cprint(`Error(database): ${error.message}`, colors.red);
@@ -86,7 +86,8 @@
             let result = null;
 
             try {
-                roomInfo = this.roomInfo = JSON.parse(data);
+                roomInfo = JSON.parse(data);
+                Object.assign(this.roomInfo, roomInfo);
                 result = Object.entries(roomInfo).filter((entry) => {
                     return (new Date() - entry[1].updated_at < fiveDays);
                 }).map((entry) => {
@@ -117,14 +118,9 @@
 
             let promise = null;
 
-            if (this.roomInfo === null) {
-
-                promise = (this.readFile()
-                    .then(this.filterInput)
-                    .catch(this.handleError));
-            } else {
-                promise = Promise.resolve([]);
-            }
+            promise = (this.readFile()
+                .then(this.filterInput)
+                .catch(this.handleError));
 
             return promise;
         }

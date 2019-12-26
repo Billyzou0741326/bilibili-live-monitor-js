@@ -101,17 +101,23 @@
 
             if (gift.type === 'guard') {
 
-                installExpiration(gift);
-                this.repo.guard.push(gift);
+                let g = {};
+                Object.assign(g, gift);
+                installExpiration(g);
+                this.repo.guard.push(g);
             } else if (gift.type === 'pk') {
 
-                installExpiration(gift);
-                this.repo.pk.push(gift);
+                let g = {};
+                Object.assign(g, gift);
+                installExpiration(g);
+                this.repo.pk.push(g);
             } else if (gift.type === 'storm') {
             } else {
 
-                installExpiration(gift);
-                this.repo.gift.push(gift);
+                let g = {};
+                Object.assign(g, gift);
+                installExpiration(g);
+                this.repo.gift.push(g);
             }
         }
 

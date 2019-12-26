@@ -11,11 +11,12 @@
     const GiftBuilder = require('./gift.js');
     const PKBuilder = require('./pk.js');
     const Bilibili = require('../bilibili.js');
+    const History = require('./history.js');
     const config = require('../global/config.js');
 
     class RoomidHandler extends EventEmitter {
 
-        constructor() {
+        constructor(history) {
             super();
             this.guard_type = {};
             this.gift_type = {};
@@ -24,6 +25,8 @@
 
             this.running = false;
             this.checkLoop = null;
+
+            this.history = (history && history instanceof History) || new History();
 
             this.bind();
         }
@@ -38,6 +41,7 @@
             if (this.running === false) {
 
                 this.running = true;
+                this.history.run();
                 this.setup().then(() => {
                     this.checkLoop = setInterval(this.processQueue, 1000 * 5);
                 });
@@ -113,20 +117,34 @@
             });
 
             guards.forEach((g) => {
-                this.emit('guard', g);
+                if (this.history.isUnique('guard', g)) {
+                    this.history.addGift(g);
+
+                    this.emit('guard', g);
+                }
             });
 
             gifts.forEach((g) => {
-                let cool_down = g.wait;
-                cool_down = cool_down > 0 ? cool_down : 0;
+                if (this.history.isUnique('gift', g)) {
 
-                setTimeout(() => {
-                    this.emit('gift', g);
-                }, cool_down * 1000);
+                    this.history.addGift(g);
+
+                    let cool_down = g.wait;
+                    cool_down = cool_down > 0 ? cool_down : 0;
+
+                    setTimeout(() => {
+                        this.emit('gift', g);
+                    }, cool_down * 1000);
+                }
             });
 
             pks.forEach((g) => {
-                this.emit('pk', g);
+                if (this.history.isUnique('pk', g)) {
+
+                    this.history.addGift(g);
+
+                    this.emit('pk', g);
+                }
             });
         }
     }
