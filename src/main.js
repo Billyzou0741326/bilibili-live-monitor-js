@@ -13,6 +13,11 @@
         GiftWorker,
         FixedWorker,
         DynamicWorker, } = require('./process/worker.js');
+    const {
+        GIFT,
+        FIXED,
+        DYNAMIC_1,
+        DYNAMIC_2, } = require('./global/config.js');
 
     const WSHost = require('./server/wshost.js');
     const HttpHost = require('./server/httphost.js');
@@ -63,15 +68,15 @@
             let worker = null;
 
             switch (process.env['type']) {
-                case 'gift':
+                case GIFT:
                     worker = new GiftWorker();
                     break;
-                case 'fixed':
+                case FIXED:
                     worker = new FixedWorker();
                     break;
-                case 'dynamic_1':
+                case DYNAMIC_1:
                     // fall through
-                case 'dynamic_2':
+                case DYNAMIC_2:
                     worker = new DynamicWorker();
                     break;
                 default:

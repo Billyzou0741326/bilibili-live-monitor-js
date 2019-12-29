@@ -11,12 +11,13 @@
     const AbstractMaster = require('./abstractmaster.js');
     const History = require('../handler/history.js');
     const Database = require('../db/database.js');
+    const config = require('../global/config.js');
     const { sleep } = require('../util/utils.js');
-
-    const GIFT = 'gift';
-    const FIXED = 'fixed';
-    const DYNAMIC_1 = 'dynamic_1';
-    const DYNAMIC_2 = 'dynamic_2';
+    const {
+        GIFT,
+        FIXED,
+        DYNAMIC_1,
+        DYNAMIC_2, } = config;
 
     class Master extends AbstractMaster {
 
@@ -52,15 +53,14 @@
             if (this.running === false) {
                 this.running = true;
 
-                // 主进程衍生分支
+                // spawns worker processes
                 this.createProcesses();
 
                 (async () => {
-                    // 等待分支就绪、获取房间号送至分支进行监听
+                    // wait for workers to go online, setup static and dynamic monitor
                     const raffleSetupTask = this.setupRaffle();
                     const fixedSetupTask = this.setupFixed();
                     await fixedSetupTask;
-                    cprint('Done setting up fixed tasks', colors.green);
                     await raffleSetupTask;
 
                     // update dynamic rooms about every 2 minutes
@@ -78,7 +78,10 @@
             if (this.running === true) {
                 const type = this.getNameById(id);
                 if (type) {
-                    const env = { 'type': type };
+                    const env = {
+                        'type': type,
+                        'verbose': config.verbose,
+                    };
                     this.workers[type] = null;
                     this.workers[type] = this.fork(type, env);
                 }
@@ -88,7 +91,10 @@
         // Forks worker processes to carry out tasks
         createProcesses() {
             Object.keys(this.workers).forEach(type => {
-                const env = { 'type': type };
+                const env = {
+                    'type': type,
+                    'verbose': config.verbose,
+                };
                 this.workers[type] = this.fork(type, env);
             });
         }
@@ -154,7 +160,8 @@
                     .filter(room => establishedRooms.has(room) === false)
                     .filter(room => this.fixedRooms.has(room) === false));
                 const filteredSize = newDynamicRooms.length;
-                cprint(`Filtered out ${originalSize-filteredSize} rooms`, colors.green);
+                if (config.verbose === true)
+                    cprint(`Filtered out ${originalSize-filteredSize} rooms`, colors.green);
 
                 // split the remaining valid rooms
                 const middle = Number.parseInt(newDynamicRooms.length / 2);
@@ -187,18 +194,16 @@
                 case 'gift':
                     // fall through
                 case 'pk':
-                    giftType = cmd;
-                    if (this.history.isUnique(giftType, data)) {
-                        this.history.addGift(data);
-                        this.emit(giftType, data);
-                        this.printGift(giftType, data);
-                    }
-                    break;
-
+                    // fall through
                 case 'storm':
                     giftType = cmd;
-                    this.emit(giftType, data);
-                    this.printGift(giftType, data);
+                    if (this.history.isUnique(giftType, data)) {
+                        const { id, roomid, name, type, expireAt } = data;
+                        const giftData = { id, roomid, name, type, expireAt };
+                        this.history.addGift(giftData);
+                        this.emit(giftType, giftData);
+                        this.printGift(giftType, giftData);
+                    }
                     break;
 
                 case 'established_rooms':

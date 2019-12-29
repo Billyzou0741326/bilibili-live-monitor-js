@@ -6,6 +6,7 @@
     
     const cprint = require('../util/printer.js');
     const colors = require('colors/safe');
+    const config = require('../global/config.js');
 
     class AbstractWorker {
 
@@ -14,6 +15,10 @@
 
             this.worker = cluster.worker;
             this.worker.on('message', this.onMessage);
+
+            if (config.verbose === false) {
+                config.verbose = (process.env['verbose'] === 'true');
+            }
         }
 
         bind() {

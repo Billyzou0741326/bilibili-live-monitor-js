@@ -159,6 +159,7 @@ class AbstractBilibiliTCP extends EventEmitter {
                 break;
             case 8:
                 if (this.heartbeatTask === null) {
+                    this.socket.write(this.heartbeat);
                     this.heartbeatTask = setInterval(() => {
                         this.socket && this.socket.write(this.heartbeat);
                     }, 30 * 1000);
