@@ -19,7 +19,7 @@
 
         constructor() {
             super();
-            this.from = 'gift';
+            this.from = process.env['type'];
             this.running = false;
 
             this.controller = new RaffleController();
@@ -39,7 +39,17 @@
 
         onMessage(msg) {
             super.onMessage(msg);
+
+            let rooms = [];
+            let response = {};
             switch (msg['cmd']) {
+                case 'get_rooms':
+                    response['cmd'] = 'established_rooms';
+                    response['from'] = this.from;
+                    response['to'] = 'master';
+                    response['data'] = rooms;
+                    process.send(response);
+                    break;
                 case 'update_rooms':
                     break;
             }
@@ -51,7 +61,7 @@
 
         constructor() {
             super();
-            this.from = 'fixed';
+            this.from = process.env['type'];
             this.running = false;
 
             this.controller = new FixedController();
@@ -86,11 +96,22 @@
 
         onMessage(msg) {
             super.onMessage(msg);
+
+            let rooms = [];
+            let response = {};
             switch (msg['cmd']) {
+                case 'get_rooms':
+                    rooms = this.controller.getConnected();
+                    response['cmd'] = 'established_rooms';
+                    response['from'] = this.from;
+                    response['to'] = 'master';
+                    response['data'] = Array.from(rooms);
+                    process.send(response);
+                    break;
                 case 'update_rooms':
-                    const rooms = msg['data'];
+                    rooms = msg['data'];
                     this.controller.updateRooms(rooms);
-                    cprint(`Received ${rooms.length} fixed rooms`, colors.green);
+                    cprint(`[ ${this.from} ] Received ${rooms.length} fixed rooms`, colors.green);
                     break;
             }
         }
@@ -101,7 +122,7 @@
 
         constructor() {
             super();
-            this.from = 'dynamic';
+            this.from = process.env['type'];
             this.running = false;
 
             this.controller = new DynamicController();
@@ -146,11 +167,22 @@
 
         onMessage(msg) {
             super.onMessage(msg);
+
+            let rooms = [];
+            let response = {};
             switch (msg['cmd']) {
+                case 'get_rooms':
+                    rooms = this.controller.getConnected();
+                    response['cmd'] = 'established_rooms';
+                    response['from'] = this.from;
+                    response['to'] = 'master';
+                    response['data'] = Array.from(rooms);
+                    process.send(response);
+                    break;
                 case 'update_rooms':
-                    const rooms = msg['data'];
+                    rooms = msg['data'];
                     this.controller.updateRooms(rooms);
-                    cprint(`Received ${rooms.length} dynamic rooms`, colors.green);
+                    cprint(`[ ${this.from} ] Received ${rooms.length} dynamic rooms`, colors.green);
                     break;
             }
         }

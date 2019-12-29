@@ -106,7 +106,7 @@
                     cprint(`Recoverable Error - Database not created`, colors.yellow);
                     break;
                 case 'EACCES':
-                    cprint(`Error(database) - File Permission required '${this.name}'`, colors.red);
+                    cprint(`Error(database) - File Permission required for '${this.name}'`, colors.red);
                     break;
                 default:
                     cprint(`Error(database) - ${error.message}`, colors.red);

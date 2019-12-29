@@ -150,6 +150,7 @@
 
         /**
          * 永久监听目标
+         * @returns     Promise -> Array[int]
          */
         static getFixedRooms() {
             return Bilibili.getAllSailboatRooms();
@@ -157,7 +158,7 @@
 
         /**
          * 大航海榜
-         * 返回值: Array - roomid
+         * @returns     Promise -> Array[int]
          */
         static getAllSailboatRooms() {
             const MAX_PAGES = 3;

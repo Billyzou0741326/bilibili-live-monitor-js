@@ -7,6 +7,7 @@
     const cprint = require('./util/printer.js');
     const colors = require('colors/safe');
 
+    // const Master = require('./process/master.js');
     const Master = require('./process/master.js');
     const {
         GiftWorker,
@@ -35,8 +36,6 @@
             cprint('bilibili-monitor[1.0.0] successfully launched', colors.green);
 
             init();
-
-            cprint('Master process established', colors.green);
 
             const master = new Master();
             master.run();
@@ -70,7 +69,9 @@
                 case 'fixed':
                     worker = new FixedWorker();
                     break;
-                case 'dynamic':
+                case 'dynamic_1':
+                    // fall through
+                case 'dynamic_2':
                     worker = new DynamicWorker();
                     break;
                 default:
