@@ -61,11 +61,11 @@
             if (this.running === false) {
                 this.running = true;
 
-                this.checkTask && Object.keys(this.checkTask).forEach(key => {
-                    const interval = this.wait.get(key);
-                    if (this.checkTask[key] === null) {
-                        this.checkTask[key] = setInterval(() => {
-                            this.clear(key);
+                this.checkTask && Object.keys(this.checkTask).forEach(giftType => {
+                    const interval = this.wait.get(giftType);
+                    if (this.checkTask[giftType] === null) {
+                        this.checkTask[giftType] = setInterval(() => {
+                            this.clear(giftType);
                         }, interval);
                     }
                 });
@@ -126,7 +126,7 @@
          */
         clear(target='guard') {
             if (typeof this.repo[target] === 'undefined') 
-                throw new Error(`Repository '${target}' does not exist`);
+                throw new Error(`Gift type '${target}' does not exist`);
 
             let expireIn = 0;
             if (target === 'guard') {
@@ -147,7 +147,7 @@
             if (this.almostExpire[target].length > 50) {
                 this.almostExpire[target] = this.almostExpire[target].filter(gift => {
                     const expired = gift.expired();
-                    return !expired;
+                    return expired === false;
                 });
             }
         }
