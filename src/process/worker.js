@@ -9,6 +9,7 @@
 
     const AbstractWorker = require('./abstractworker.js');
 
+    const config = require('../global/config.js');
     const {
         RaffleController,
         DynamicController,
@@ -101,7 +102,10 @@
             let response = {};
             switch (msg['cmd']) {
                 case 'get_rooms':
-                    rooms = this.controller.getConnected();
+                    rooms = [].concat(
+                        Array.from(this.controller.getConnected()),
+                        this.controller.recentlyClosed,
+                    );
                     response['cmd'] = 'established_rooms';
                     response['from'] = this.from;
                     response['to'] = 'master';
@@ -111,7 +115,8 @@
                 case 'update_rooms':
                     rooms = msg['data'];
                     this.controller.updateRooms(rooms);
-                    cprint(`[ ${this.from} ] Received ${rooms.length} fixed rooms`, colors.green);
+                    if (config.verbose === true)
+                        cprint(`[ ${this.from} ] Received ${rooms.length} fixed rooms`, colors.green);
                     break;
             }
         }
@@ -172,7 +177,10 @@
             let response = {};
             switch (msg['cmd']) {
                 case 'get_rooms':
-                    rooms = this.controller.getConnected();
+                    rooms = [].concat(
+                        Array.from(this.controller.getConnected()),
+                        this.controller.recentlyClosed,
+                    );
                     response['cmd'] = 'established_rooms';
                     response['from'] = this.from;
                     response['to'] = 'master';
@@ -182,7 +190,8 @@
                 case 'update_rooms':
                     rooms = msg['data'];
                     this.controller.updateRooms(rooms);
-                    cprint(`[ ${this.from} ] Received ${rooms.length} dynamic rooms`, colors.green);
+                    if (config.verbose === true)
+                        cprint(`[ ${this.from} ] Received ${rooms.length} dynamic rooms`, colors.green);
                     break;
             }
         }

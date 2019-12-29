@@ -35,12 +35,12 @@
         }
 
         giftHandler(request, response) {
-            const gifts = this.history.repo['gift'];
+            const gifts = this.history.get('gift');
             response.jsonp(gifts);
         }
 
         guardHandler(request, response) {
-            const guards = this.history.repo['guard'];
+            const guards = this.history.get('guard');
             response.jsonp(guards);
         }
     }

@@ -226,7 +226,7 @@
                 'parent_area_id': areaid, 
                 'page': 0, 
                 'page_size': size > 99 || size < 0 ? 99 : size, 
-                'sort_type': 'online',
+                'sort_type': 'live_time',
             };
 
             let promises = [];
@@ -299,10 +299,10 @@
             const url = 'api.live.bilibili.com';
             const path = '/room/v3/area/getRoomList';
             const params = {
-                'parent_area_id': 0, 
-                'page': 1, 
-                'page_size': 1, 
-                'sort_type': 'online', 
+                'parent_area_id': 0,
+                'page': 1,
+                'page_size': 1,
+                'sort_type': 'live_time',
             };
             const query = querystring.stringify(params);
             const method = 'GET';

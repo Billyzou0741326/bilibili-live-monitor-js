@@ -24,7 +24,9 @@
         bind() {
             this.update = this.update.bind(this);
             this.readFile - this.readFile.bind(this);
-            this.filterInput = this.filterInput.bind(this);
+            this.saveToFile = this.saveToFile.bind(this);
+            this.updateLocal = this.updateLocal.bind(this);
+            this.filterRooms = this.filterRooms.bind(this);
             this.handleError = this.handleError.bind(this);
         }
 
@@ -32,6 +34,16 @@
             if (this.running === false) {
                 this.running = true;
                 this.updateTask = setInterval(this.update, 1000 * 60 * 5);
+            }
+        }
+
+        stop() {
+            if (this.running === true) {
+                if (this.updateTask !== null) {
+                    clearInterval(this.updateTask);
+                    this.updateTask = null;
+                }
+                this.running = false;
             }
         }
 
@@ -50,10 +62,15 @@
             return Promise.resolve(result);
         }
 
-        close() {
+        update() {
+            (this.readFile()
+                .then(this.updateLocal)
+                .then(this.filterRooms)
+                .catch(this.handleError)
+                .then(this.saveToFile));
         }
 
-        update() {
+        saveToFile() {
             const data = JSON.stringify(this.roomInfo, null, 4);
             fs.writeFile(this.name, data, error => {
                 if (error) {
@@ -79,17 +96,26 @@
             })();
         }
 
-        filterInput(data) {
+        updateLocal(data) {
+            try {
+                const roomInfo = JSON.parse(data);
+                Object.assign(this.roomInfo, roomInfo);
+            } catch (error) {
+                result = Promise.reject(error);
+            }
+            return data;
+        }
 
-            const fiveDays = 1000 * 60 * 60 * 24 * 5;
+        filterRooms(data) {
+
+            const thirtyDays = 1000 * 60 * 60 * 24 * 30;
             let roomInfo = {};
             let result = null;
 
             try {
                 roomInfo = JSON.parse(data);
-                Object.assign(this.roomInfo, roomInfo);
                 result = Object.entries(roomInfo).filter((entry) => {
-                    return (new Date() - entry[1].updated_at < fiveDays);
+                    return (new Date() - entry[1].updated_at < thirtyDays);
                 }).map((entry) => {
                     return (Number.parseInt(entry[0]));
                 });
@@ -119,7 +145,8 @@
             let promise = null;
 
             promise = (this.readFile()
-                .then(this.filterInput)
+                .then(this.updateLocal)
+                .then(this.filterRooms)
                 .catch(this.handleError));
 
             return promise;
