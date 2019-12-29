@@ -9,21 +9,25 @@
                 'guard': [],
                 'gift': [],
                 'pk': [],
+                'storm': [],
             };
             this.almostExpire = {
                 'guard': [],
                 'gift': [],
                 'pk': [],
+                'storm': [],
             };
             this.wait = new Map([
                 [ 'guard', 1000 * 60 ],
                 [ 'gift', 1000 * 5 ],
                 [ 'pk', 1000 * 5 ],
+                [ 'storm', 1000 * 60 * 2 ],
             ]);
             this.checkTask = {
                 'guard': null,
                 'gift': null,
                 'pk': null,
+                'storm': null,
             };
 
             this.running = false;
@@ -36,7 +40,7 @@
         }
 
         isUnique(type, someGift) {
-            const giftList = this.get(type);
+            const giftList = this.getAll(type);
             if (!giftList) return true;
 
             let valid = true;
@@ -51,6 +55,15 @@
         }
 
         get(type) {
+            let result = this.repo[type] || [];
+            result = result.map(gift => {
+                const { id, roomid, name, type, expireAt } = gift;
+                return { id, roomid, name, type, expireAt };
+            });
+            return result;
+        }
+
+        getAll(type) {
             return {
                 'valid': this.repo[type],
                 'almostExpire': this.almostExpire[type],
@@ -112,6 +125,11 @@
                 installExpiration(g);
                 this.repo.pk.push(g);
             } else if (gift.type === 'storm') {
+
+                let g = {};
+                Object.assign(g, gift);
+                installExpiration(g);
+                this.repo.storm.push(g);
             } else {
 
                 let g = {};
