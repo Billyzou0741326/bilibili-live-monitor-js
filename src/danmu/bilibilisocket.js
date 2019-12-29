@@ -3,11 +3,14 @@
 const net = require('net');
 const EventEmitter = require('events').EventEmitter;
 
+const cprint = require('../util/printer.js');
+const colors = require('colors/safe');
+
 const Bilibili = require('../bilibili.js');
 const config = require('../global/config.js');
 const wsUri = require('../global/config.js').wsUri;
-const cprint = require('../util/printer.js');
-const colors = require('colors/safe');
+const GiftBuilder = require('../handler/gift.js');
+const GuardBuilder = require('../handler/guard.js');
 
 class AbstractBilibiliTCP extends EventEmitter {
 
@@ -138,6 +141,36 @@ class AbstractBilibiliTCP extends EventEmitter {
     }
 
     onMessage(buffer) {
+        const totalLength = buffer.readUInt32BE(0);
+        const headerLength = buffer.readUInt16BE(4);
+        const cmd = buffer.readUInt32BE(8);
+
+        let jsonStr = '';
+        let msg = null;
+        switch (cmd) {
+            case 3:
+                const popularity = buffer.readUInt32BE(headerLength);
+                this.onPopularity(popularity);
+                break;
+            case 5:
+                jsonStr = buffer.toString('utf8', headerLength, totalLength);
+                msg = JSON.parse(jsonStr);
+                this.processMsg(msg);
+                break;
+            case 8:
+                if (this.heartbeatTask === null) {
+                    this.heartbeatTask = setInterval(() => {
+                        this.socket && this.socket.write(this.heartbeat);
+                    }, 30 * 1000);
+                }
+                break;
+        }
+    }
+
+    processMsg(msg) {
+    }
+
+    onPopularity(popularity) {
     }
 
     prepareData(cmd, str) {
@@ -166,35 +199,7 @@ class BilibiliSocket extends AbstractBilibiliTCP {
     }
 
     run() {
-        super.run();
-    }
-
-    onMessage(buffer) {
-        super.onMessage(buffer);
-        const totalLength = buffer.readUInt32BE(0);
-        const headerLength = buffer.readUInt16BE(4);
-        const cmd = buffer.readUInt32BE(8);
-
-        let jsonStr = '';
-        let msg = null;
-        switch (cmd) {
-            case 3:
-                const popularity = buffer.readUInt32BE(headerLength);
-                this.onPopularity(popularity);
-                break;
-            case 5:
-                jsonStr = buffer.toString('utf8', headerLength, totalLength);
-                msg = JSON.parse(jsonStr);
-                this.processMsg(msg);
-                break;
-            case 8:
-                if (this.heartbeatTask === null) {
-                    this.heartbeatTask = setInterval(() => {
-                        this.socket && this.socket.write(this.heartbeat);
-                    }, 30 * 1000);
-                }
-                break;
-        }
+        return super.run();
     }
 
     processMsg(msg) {
@@ -203,17 +208,26 @@ class BilibiliSocket extends AbstractBilibiliTCP {
 
         let cmd = msg['cmd'];
         switch (cmd) {
-            case 'NOTICE_MSG':
-                this.onNoticeMsg(msg);
+            case 'GUARD_LOTTERY_START':
+                this.onGuard(msg);
+                break;
+            case 'TV_START':
+                this.onTV(msg);
+                break;
+            case 'RAFFLE_START':
+                this.onRaffle(msg);
                 break;
             case 'SPECIAL_GIFT':
                 this.onSpecialGift(msg);
                 break;
-            case 'ANCHOR_LOT_START':
-                break;
-                this.onAnchor(msg);
             case 'PK_LOTTERY_START':
                 this.onPkLottery(msg);
+                break;
+            case 'ANCHOR_LOT_START':
+                this.onAnchorLottery(msg);
+                break;
+            case 'NOTICE_MSG':
+                this.onNoticeMsg(msg);
                 break;
             case 'PREPARING':
                 this.onPreparing(msg);
@@ -226,17 +240,131 @@ class BilibiliSocket extends AbstractBilibiliTCP {
         }
     }
 
-    onGuard(msg) {
-        this.emit('guard');
+    onRaffle(msg) {
+        const data = msg['data'];
+        const dataOk = typeof data !== 'undefined';
+
+        let gift = null;
+        if (dataOk) {
+            const type = data['type'];
+            const id = data['raffleId'];
+            const name = data['title'] || '未知';
+            const expireAt = data['time'] + Number.parseInt(0.001 * new Date());
+            gift = (GiftBuilder.start()
+                .withId(id)
+                .withRoomid(this.roomid)
+                .withType(type)
+                .withName(name)
+                .withExpireAt(expireAt)
+                .build());
+            this.emit('gift', gift);
+        }
+
+        return gift;
     }
 
-    onAnchor(msg) {
+    onTV(msg) {
+        const data = msg['data'];
+        const dataOk = typeof data !== 'undefined';
+
+        let gift = null;
+        if (dataOk) {
+            const type = data['type'];
+            const id = data['raffleId'];
+            const name = data['title'] || '未知';
+            const expireAt = data['time'] + Number.parseInt(0.001 * new Date());
+            gift = (GiftBuilder.start()
+                .withId(id)
+                .withRoomid(this.roomid)
+                .withType(type)
+                .withName(name)
+                .withExpireAt(expireAt)
+                .build());
+            this.emit('gift', gift);
+        }
+
+        return gift;
+    }
+
+    onGuard(msg) {
+        const data = msg['data'];
+        const dataOk = typeof data !== 'undefined';
+
+        const nameOfType = {
+            1: '总督',
+            2: '提督',
+            3: '舰长',
+        };
+
+        let guard = null;
+        if (dataOk) {
+            const lottery = data['lottery'];
+            const lotteryOk = typeof lottery !== 'undefined';
+
+            const type = data['type'];
+            const id = data['id'];
+            const name = nameOfType[data['privilege_type']];
+            const expireAt = ((lotteryOk || 0) && lotteryOk['time']) + Number.parseInt(0.001 * new Date());
+            guard = (GuardBuilder.start()
+                .withId(id)
+                .withRoomid(this.roomid)
+                .withType(type)
+                .withName(name)
+                .withExpireAt(expireAt)
+                .build());
+            this.emit('guard', guard);
+        }
+
+        return guard;
+    }
+
+    onAnchorLottery(msg) {
+        const data = msg['data'];
+        const dataOk = typeof data !== 'undefined';
+
+        let details = null;
+        if (dataOk) {
+            const name = data['award_name'];
+            const roomid = data['room_id'];
+            const price = data['gift_price'];
+            const num = data['gift_num'];
+            details = {
+                name,
+                roomid,
+                price,
+                num,
+            };
+        }
+
+        return details;
     }
 
     onPkLottery(msg) {
     }
 
     onSpecialGift(msg) {
+        const data = msg['data'];
+        const dataOk = typeof data !== 'undefined';
+
+        if (!dataOk) return null;
+
+        const info = data['39'];
+        const infoOk = typeof info !== 'undefined';
+        if (!infoOk) return null;
+
+        let details = null;
+        if (info['action'] === 'start') {
+            const id = info['id'];
+            details = {
+                'id': id,
+                'roomid': this.roomid,
+                'type': 'storm',
+                'name': '节奏风暴',
+            };
+            this.emit('storm', details);
+        }
+
+        return details;
     }
 
     onNoticeMsg(msg) {
@@ -262,9 +390,8 @@ class FixedGuardMonitor extends BilibiliSocket {
         super(roomid);
     }
 
-    onAnchor(msg) {
-        const data = msg['data'];
-        this.emit('anchor', this.roomid);
+    run() {
+        return super.run();
     }
 
     onPkLottery(msg) {
@@ -273,47 +400,8 @@ class FixedGuardMonitor extends BilibiliSocket {
     }
 
     onGuard(msg) {
-        super.onGuard(msg);
+        return super.onGuard(msg);
     }
-
-    onSpecialGift(msg) {
-        try {
-            const data = msg['data']['39'];
-
-            if (typeof data !== 'undefined' && data['action'] === 'start') {
-                const id = data['id'];
-                const details = {
-                    'id': id,
-                    'roomid': this.roomid,
-                    'type': 'storm',
-                    'name': '节奏风暴',
-                };
-                this.emit('storm', details);
-            }
-        } catch (error) {
-            cprint(`Error: ${error.message} - ${JSON.stringify(msg)}`, colors.red);
-        }
-    }
-
-    onNoticeMsg(msg) {
-
-        const msg_type = msg['msg_type'];
-        const roomid = msg['real_roomid'];
-        
-        switch (msg_type) {
-            case 2:
-                // fall through
-            case 3:
-                if (roomid === this.roomid) {
-                    this.emit('roomid', roomid);
-
-                    if (msg_type === 3) this.onGuard(msg);
-                }
-                break;
-        }
-    }
-
-    onGuard(msg) {}
 }
 
 /**
@@ -332,11 +420,12 @@ class GuardMonitor extends FixedGuardMonitor {
     }
 
     onGuard(msg) {
-        super.onGuard(msg);
+        let result = super.onGuard(msg);
         ++this.guardCount;
         if (this.toFixed()) {
             this.close();
         }
+        return result;
     }
 
     onPreparing(msg) {

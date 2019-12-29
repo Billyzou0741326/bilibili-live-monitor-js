@@ -52,6 +52,10 @@
             this.connections.clear();
         }
 
+        getConnected() {
+            return this.connections.keys();
+        }
+
         updateRooms(roomList) {
             const established = Array.from(this.connections.keys());
             this.roomWaitList = Array.from(roomList).filter(room => {
@@ -68,6 +72,7 @@
 
         constructor() {
             super();
+            this.setupMonitorTask = Promise.resolve();
         }
 
         bind() {
@@ -96,18 +101,26 @@
 
             const list = this.roomWaitList;
 
-            const tasks = list.map((roomid, index) => {
+            let i = 0;
+            const tasks = list.map(roomid => {
+                const x = i;
+                ++i;
                 return (async () => {
-                    await sleep(index * 50);    // 50ms 间隔
+                    await sleep(x * 30);        // 30ms 间隔
                     this.setupMonitorAtRoom(roomid);
                 })();
             });
 
-            return Promise.all(tasks).then(() => {
-                if (this.recentlyClosed.length > 30) {
-                    this.recentlyClosed.splice(20);
-                }
-            });
+            this.setupMonitorTask = (async () => {
+                await this.setupMonitorTask;
+                return Promise.all(tasks).then(() => {
+                    if (this.recentlyClosed.length > 30) {
+                        this.recentlyClosed.splice(20);
+                    }
+                });
+            })();
+
+            return this.setupMonitorTask;
         }
 
         setupMonitorAtRoom(roomid) {
@@ -141,7 +154,11 @@
                     this.recentlyClosed.push(roomid);
                 })
                 .on('roomid', (roomid) => this.roomidHandler.enqueue(roomid))
-                .on('guard', () => this.emit('add_to_db', roomid))
+                .on('guard', (g) => {
+                    this.emit('add_to_db', roomid);
+                    this.emit('guard', g);
+                })
+                .on('gift', (g) => this.emit('gift', g))
                 .on('storm', (g) => this.emit('storm', g)));
             dmlistener.run();
         }
@@ -151,6 +168,7 @@
 
         constructor() {
             super();
+            this._type = process.env['type'] || '动态';
         }
 
         updateRooms(roomList) {
@@ -162,9 +180,7 @@
         }
 
         setupMonitor() {
-            return super.setupMonitor().then(() => {
-                cprint(`[ 动态 ] Monitoring ${this.connections.size} rooms`, colors.green);
-            }).catch(error => {
+            return super.setupMonitor().catch(error => {
                 cprint(`${error.message}`, colors.red);
             });
         }
@@ -187,6 +203,8 @@
                     }
                 })
                 .on('roomid', (roomid) => this.roomidHandler.enqueue(roomid))
+                .on('guard', (g) => this.emit('guard', g))
+                .on('gift', (g) => this.emit('gift', g))
                 .on('storm', (g) => this.emit('storm', g)));
             dmlistener.run();
         }

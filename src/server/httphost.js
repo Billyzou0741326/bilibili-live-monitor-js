@@ -32,6 +32,7 @@
 
         run() {
             this.router.run();
+            this.app.set('json spaces', 4);
             this.app.use('/', this.router.getRouter());
             this.server = http.createServer(this.app).listen(this.port, this.host);
             this.server.on('error', error => {
