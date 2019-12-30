@@ -12,8 +12,14 @@
 
     const lh = '127.0.0.1';
     const wsServer = {
-        'host': settings['wsServer']['ip'] || '0.0.0.0',
-        'port': settings['wsServer']['port'] || 8999,
+        'self': {
+            'host': settings['wsServer']['ip'] || '0.0.0.0',
+            'port': settings['wsServer']['port'] || 8999,
+        },
+        'bilive': {
+            'host': settings['wsServer']['ip'] || '0.0.0.0',
+            'port': settings['wsServer']['port'] || 8998,
+        },
     };
     const httpServer = {
         'host': settings['httpServer']['ip'] || '0.0.0.0',
