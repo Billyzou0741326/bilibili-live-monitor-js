@@ -177,10 +177,7 @@
             }
 
             const result = Promise.all(promises).then(lists => {
-                const finalList = [];
-                lists.forEach(list => {
-                    list.forEach(roomid => finalList.push(roomid));
-                });
+                const finalList = [].concat(...lists);
                 return finalList;
             });
 
@@ -204,6 +201,59 @@
             const options = {
                 'host': url,
                 'path': `${path}?${query}`,
+                'method': method,
+                'headers': headers,
+            };
+
+            return rateLimiter.request(options, false);
+        }
+
+        /**
+         * 元气榜(月)
+         * @returns     Promise -> Array[int]
+         */
+        static getAllGenkiRooms() {
+            const MAX_PAGES = 3;
+            const promises = [];
+
+            for (let page = 1; page <= MAX_PAGES; ++page) {
+                promises.push(
+                    Bilibili.getGenkiRooms(page)
+                    .then(jsonObj => {
+                        return jsonObj['data']['list'].map(entry => entry['roomid']);
+                    })
+                    .catch(error => {
+                        cprint(`${Bilibili.getGenkiRooms.name} - ${error}`, colors.red);
+                        return [];
+                    })
+                );
+            }
+
+            const result = Promise.all(promises).then(lists => {
+                const finalList = [].concat(...lists);
+                return finalList;
+            });
+
+            return result;
+        }
+
+        static getGenkiRooms(page) {
+            const url = 'api.live.bilibili.com';
+            const path = '/rankdb/v1/Rank2018/getWebTop';
+            const method = 'GET';
+            const params = {
+                'date': 'month',
+                'type': 'master_vitality_2018',
+                'areaid': 0,
+                'page': page,
+                'is_trend': 1,
+                'page_size': 20,
+            };
+            const paramstr = querystring.stringify(params);
+            const headers = webHeaders;
+            const options = {
+                'host': url,
+                'path': `${path}?${paramstr}`,
                 'method': method,
                 'headers': headers,
             };

@@ -135,8 +135,7 @@
 
         setupMonitor() {
             return super.setupMonitor().then(() => {
-                if (config.verbose === true)
-                    cprint(`[ 静态 ] Monitoring ${this.connections.size} rooms`, colors.green);
+                cprint(`[ 静态 ] Monitoring ${this.connections.size} rooms`, colors.green);
             }).catch(error => {
                 cprint(`${error.message}`, colors.red);
             });

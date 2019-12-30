@@ -46,7 +46,8 @@
             ]).then(lists => {
                 // 并 nested list 为 one-dimensional list
                 // i.e:  [].concat( [ 1, 2, 3 ], [ 4, 5, 6 ] )   ->   [ 1, 2, 3, 4, 5, 6 ]
-                return [].concat(...lists);
+                const mayHaveDuplicateRooms = [].concat(...lists);
+                return Array.from(new Set(mayHaveDuplicateRooms));
             }).catch(error => {
                 cprint(`Error(getFixed): ${error}`, colors.red);
                 return Promise.resolve([]);
@@ -67,11 +68,15 @@
 
         // part of fixed
         getFixedFromAPI() {
-            return Bilibili.getAllSailboatRooms().catch(error => {
-                cprint(`Error(getFixed): ${error}`, colors.red);
-                // 失败则返回空Array
-                return Promise.resolve([]);
-            });
+            const getFixedTask1 = Bilibili.getAllSailboatRooms().catch(() => []);
+            const getFixedTask2 = Bilibili.getAllGenkiRooms().catch(() => []);
+
+            const allFixedFromAPI = (async () => 
+                [].concat(...(await Promise.all([
+                    getFixedTask1,
+                    getFixedTask2, ]))));
+
+            return allFixedFromAPI();
         }
     }
 
