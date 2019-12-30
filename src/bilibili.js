@@ -9,7 +9,6 @@
     const crypto = require('crypto');
     const querystring = require('querystring');
     const cprint = require('./util/printer.js');
-    const RateLimiter = require('./util/ratelimiter.js');
     const { 
         appCommon,
         appSecret,
