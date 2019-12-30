@@ -250,15 +250,16 @@ class BilibiliSocket extends AbstractBilibiliTCP {
             const type = data['type'];
             const id = data['raffleId'];
             const name = data['title'] || '未知';
+            const wait = data['time_wait'];
             const expireAt = data['time'] + Number.parseInt(0.001 * new Date());
             gift = (GiftBuilder.start()
                 .withId(id)
                 .withRoomid(this.roomid)
                 .withType(type)
                 .withName(name)
+                .withWait(wait)
                 .withExpireAt(expireAt)
                 .build());
-            this.emit('gift', gift);
         }
 
         return gift;
@@ -273,15 +274,16 @@ class BilibiliSocket extends AbstractBilibiliTCP {
             const type = data['type'];
             const id = data['raffleId'];
             const name = data['title'] || '未知';
+            const wait = data['time_wait'];
             const expireAt = data['time'] + Number.parseInt(0.001 * new Date());
             gift = (GiftBuilder.start()
                 .withId(id)
                 .withRoomid(this.roomid)
                 .withType(type)
                 .withName(name)
+                .withWait(wait)
                 .withExpireAt(expireAt)
                 .build());
-            this.emit('gift', gift);
         }
 
         return gift;
@@ -313,7 +315,6 @@ class BilibiliSocket extends AbstractBilibiliTCP {
                 .withName(name)
                 .withExpireAt(expireAt)
                 .build());
-            this.emit('guard', guard);
         }
 
         return guard;
@@ -362,7 +363,6 @@ class BilibiliSocket extends AbstractBilibiliTCP {
                 'type': 'storm',
                 'name': '节奏风暴',
             };
-            this.emit('storm', details);
         }
 
         return details;
@@ -395,13 +395,32 @@ class FixedGuardMonitor extends BilibiliSocket {
         return super.run();
     }
 
+    onRaffle(msg) {
+        const raffleData = super.onRaffle(msg);
+        if (raffleData !== null)
+            setTimeout(() => this.emit('gift', raffleData), raffleData['wait'] * 1000);
+        return raffleData;
+    }
+
     onPkLottery(msg) {
         const data = msg['data'];
-        this.emit('roomid', this.roomid);
+        if (data !== null)
+            this.emit('roomid', this.roomid);
+        return data;
     }
 
     onGuard(msg) {
-        return super.onGuard(msg);
+        const guardData = super.onGuard(msg);
+        if (guardData !== null)
+            this.emit('guard', guardData);
+        return guardData;
+    }
+
+    onSpecialGift(msg) {
+        const stormData = super.onSpecialGift(msg);
+        if (stormData !== null)
+            this.emit('storm', stormData);
+        return stormData;
     }
 }
 
