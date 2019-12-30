@@ -43,15 +43,15 @@
             config.debug = true;
         }
 
-        config.ip = settings['wsServer']['ip'];
-        config.port = settings['wsServer']['port'];
+        config.ip = settings['wsServer']['self']['ip'];
+        config.port = settings['wsServer']['self']['port'];
 
         const ipIndex = process.argv.indexOf('--ip');
         if (ipIndex !== -1) {
             const i = ipIndex;
             if (i + 1 < process.argv[i + 1]) {
                 const ip = process.argv[i + 1];
-                config.wsServer['ip'] = ip;
+                config.wsServer['self']['ip'] = ip;
             }
         }
 
@@ -61,7 +61,7 @@
             if (i + 1 < process.argv[i + 1]) {
                 const port = Number.parseInt(process.argv[i + 1]);
                 if (!isNaN(port)) {
-                    config.wsServer['port'] = port;
+                    config.wsServer['self']['port'] = port;
                 }
             }
         }

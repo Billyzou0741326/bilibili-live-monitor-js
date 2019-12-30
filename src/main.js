@@ -20,6 +20,7 @@
         DYNAMIC_2, } = require('./global/config.js');
 
     const WSHost = require('./server/wshost.js');
+    const WSHostBilive = require('./server/wshost-bilive.js');
     const HttpHost = require('./server/httphost.js');
 
     const init = require('./init.js');
@@ -48,15 +49,30 @@
             const wsHost = new WSHost();
             wsHost.run();
 
+            const wsHostBilive = new WSHostBilive();
+            wsHostBilive.run();
+
             const httpHost = new HttpHost(master.history);
             httpHost.run();
 
 
             (master
-                .on('gift', (g) => wsHost.broadcast(wsHost.parseMessage(g)))
-                .on('guard', (g) => wsHost.broadcast(wsHost.parseMessage(g)))
-                .on('pk', (g) => wsHost.broadcast(wsHost.parseMessage(g)))
-                .on('storm', (g) => wsHost.broadcast(wsHost.parseMessage(g))));
+                .on('gift', (g) => {
+                    wsHost.broadcast(wsHost.parseMessage(g));
+                    wsHostBilive.broadcast(wsHostBilive.parseMessage(g));
+                })
+                .on('guard', (g) => {
+                    wsHost.broadcast(wsHost.parseMessage(g));
+                    wsHostBilive.broadcast(wsHostBilive.parseMessage(g));
+                })
+                .on('pk', (g) => {
+                    wsHost.broadcast(wsHost.parseMessage(g));
+                    wsHostBilive.broadcast(wsHostBilive.parseMessage(g));
+                })
+                .on('storm', (g) => {
+                    wsHost.broadcast(wsHost.parseMessage(g));
+                    wsHostBilive.broadcast(wsHostBilive.parseMessage(g));
+                }));
 
         } else if (cluster.isWorker) {
 
