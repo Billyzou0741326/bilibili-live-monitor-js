@@ -1,11 +1,11 @@
 # bilibili-live-monitor (b站舰长、抽奖监听)
 ![Github](https://img.shields.io/github/license/Billyzou0741326/bilibili-live-raffle-monitor)
-![Github](https://img.shields.io/badge/nodejs-10.6.3-blue)
+![Github](https://img.shields.io/badge/nodejs-10.16.3-blue)
 
 ## Info
  - 运行于本地localhost的JS版b站舰长监听
  - 此程序无需用户提供账号信息 且不收集任何数据
- - [bilibili-raffle](https://github.com/Billyzou0741326/bilibili-raffle)为此项目的client
+ - [bilibili-raffle-js](https://github.com/Billyzou0741326/bilibili-raffle-js)为此项目的client
  - 覆盖率: null (未统计)
 
 ## Features
@@ -35,9 +35,9 @@
  1. 命令行切换到package.json所在的目录
  2. `npm install`                    (执行一次就好)
  3. `node ./src/main.js`             (正常运行)
- 4. `node ./src/main.js -v`          (显示更多信息 !刷屏警告)
+ 4. `node ./src/main.js -v`          (显示获取到x个动态房间)
  5. `node ./src/main.js --debug`     (显示对debug有帮助的信息(自认为) !刷屏警告)
- 6. 运行后可以进浏览器<http://127.0.0.1:9001/guard>查看可领取范围内的舰长 (可能要等会)
+ 6. 运行后可以进浏览器<http://127.0.0.1:9001/guard>查看可领取范围内的舰长, <http://127.0.0.1:9001/gift>查看可领取范围内的抽奖 (可能要等会)
 
 ### 运行方式 (3) - 不会用命令行可以用这种方法
  1. 右键`run.ps1`, 用powershell运行
@@ -59,10 +59,6 @@
 
 ### Docker
 docker run --publish 8999:8999 --publish 9001:9001 <image-name>
-
-### Index
-JSON格式 (Array)
-![1111.png](https://i.loli.net/2019/12/24/YnfC8xjycTWD9lt.png)
 
 ## Bug report
 有问题可以来[Issue](https://github.com/Billyzou0741326/bilibili-live-monitor-js/issues)聊天
