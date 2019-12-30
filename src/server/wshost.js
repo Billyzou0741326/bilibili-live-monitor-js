@@ -2,7 +2,6 @@
 
     'use strict';
 
-    const net = require('net');
     const WebSocket = require('ws');
 
     const config = require('../global/config.js');
@@ -14,11 +13,11 @@
 
         constructor(host, port) {
             if (!host)
-                this.host = config['wsServer']['host'];
+                this.host = config['wsServer']['self']['host'];
             else
                 this.host = host;
             if (!port)
-                this.port = config['wsServer']['port'];
+                this.port = config['wsServer']['self']['port'];
             else
                 this.port = port;
             this.ws = null;
@@ -39,8 +38,12 @@
                 'perMessageDeflate': false, 
                 'maxPayload': 4 * 1024, 
             });
-            cprint(`WS server listening on ${this.host}:${this.port}`, colors.green);
+            this.printSuccess();
             return ws;
+        }
+
+        printSuccess() {
+            cprint(`WS server listening on ${this.host}:${this.port}`, colors.green);
         }
 
         listen(ws) {
@@ -61,16 +64,7 @@
                     socket.isAlive = true;
                 });
 
-                socket.on('message', (in_message) => {
-                    const accepted = Buffer.alloc(16);
-                    accepted.writeUInt32BE(16, 0);
-                    accepted.writeUInt16BE(16, 4);
-                    accepted.writeUInt16BE(1, 6);
-                    accepted.writeUInt32BE(8, 8);
-                    accepted.writeUInt32BE(1, 12);
-                    socket.send(accepted);
-
-                });
+                socket.on('message', (in_message) => {});
 
                 socket.on('error', (error) => {
                     cprint(`Error: ${error.message}`, colors.red);
@@ -122,15 +116,7 @@
             const str = JSON.stringify(jsonObj);
             const data = Buffer.from(str, 'utf8');
 
-            const header = Buffer.alloc(16);
-            header.writeUInt32BE(16 + data.length, 0);
-            header.writeUInt16BE(16, 4);
-            header.writeUInt16BE(1, 6);
-            header.writeUInt32BE(5, 8);
-            header.writeUInt32BE(1, 12);
-
-            const payload = Buffer.concat([ header, data ]);
-            return payload;
+            return data;
         }
     }
 

@@ -1,7 +1,17 @@
 {
     "wsServer": {
-        "ip": "0.0.0.0", 
-        "port": 8999
+        "self": {
+            "ip": "0.0.0.0", 
+            "port": 8999
+        },
+        "bilive": {
+            "ip": "0.0.0.0",
+            "port": 8998
+        },
+        "bilihelper": {
+            "ip": "0.0.0.0",
+            "port": 8997
+        }
     },
     "httpServer": {
         "ip": "0.0.0.0",
