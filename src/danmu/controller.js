@@ -12,10 +12,11 @@
     const {
         GuardMonitor, 
         FixedGuardMonitor, 
-        RaffleMonitor } = require('../danmu/bilibilisocket.js');
+        RaffleMonitor } = require('../danmu/bilibilitcp.js');
     const { sleep } = require('../util/utils.js');
 
 
+    /** Manages BilibiliTCP connections */
     class AbstractController extends EventEmitter {
 
         constructor() {
@@ -153,11 +154,9 @@
                     this.connections.delete(roomid);
                     this.recentlyClosed.push(roomid);
                 })
+                .on('add_to_db', () => this.emit('add_to_db', roomid))
                 .on('roomid', (roomid) => this.roomidHandler.enqueue(roomid))
-                .on('guard', (g) => {
-                    this.emit('add_to_db', roomid);
-                    this.emit('guard', g);
-                })
+                .on('guard', (g) => this.emit('guard', g))
                 .on('gift', (g) => this.emit('gift', g))
                 .on('storm', (g) => this.emit('storm', g)));
             dmlistener.run();
