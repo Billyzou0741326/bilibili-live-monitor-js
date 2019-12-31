@@ -53,8 +53,10 @@
             config.debug = true;
         }
 
-        config.ip = settings['wsServer']['self']['ip'];
-        config.port = settings['wsServer']['self']['port'];
+        config.wsServer['self']['host'] = settings['wsServer']['self']['ip'];
+        config.wsServer['self']['port'] = settings['wsServer']['self']['port'];
+        config.wsServer['bilive']['host'] = settings['wsServer']['bilive']['ip'];
+        config.wsServer['bilive']['port'] = settings['wsServer']['bilive']['port'];
 
         const ipIndex = process.argv.indexOf('--ws-ip');
         if (ipIndex !== -1) {
