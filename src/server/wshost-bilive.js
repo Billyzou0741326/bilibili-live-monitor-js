@@ -15,7 +15,7 @@
 
         constructor(host, port) {
             if (!host)
-                host = config['wsServer']['bilive']['ip'];
+                host = config['wsServer']['bilive']['host'];
             if (!port)
                 port = config['wsServer']['bilive']['port'];
             super(host, port);
