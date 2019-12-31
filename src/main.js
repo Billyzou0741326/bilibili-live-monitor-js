@@ -7,7 +7,6 @@
     const cprint = require('./util/printer.js');
     const colors = require('colors/safe');
 
-    // const Master = require('./process/master.js');
     const Master = require('./process/master.js');
     const {
         GiftWorker,
@@ -33,16 +32,18 @@
 
         if (cluster.isMaster) {
 
-            /** 总控
-             *  - 通过各渠道（db、api）获取监听房间号
-             *  - 向支线分配监听对象
-             *  - 听取抽奖信息反馈
+            /** Master process
+             *  - Spawns child processes
+             *  - Pushes rooms to child processes
+             *  - Listens for reported lottery information
              */
 
             cprint('bilibili-monitor[1.0.0] successfully launched', colors.green);
 
+            // Raises Linux nofile limit, configures settings
             init();
 
+            // Establish master object to spawn and manage workers
             const master = new Master();
             master.run();
 
@@ -56,6 +57,7 @@
             httpHost.run();
 
 
+            // On any of the following event, push to clients
             (master
                 .on('gift', (g) => {
                     wsHost.broadcast(wsHost.parseMessage(g));
@@ -76,10 +78,10 @@
 
         } else if (cluster.isWorker) {
 
-            /** 支线
-             *  - 听取分配到的房间号、建立连接
-             *  - 向主线反馈抽奖信息
-             *  - 掉线处理
+            /** Worker process
+             *  - Listens for distributed rooms, establish connections
+             *  - Report lottery information to master process
+             *  - Handle disconnections
              */
             let worker = null;
 

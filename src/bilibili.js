@@ -15,6 +15,8 @@
         appHeaders,
         webHeaders, } = require('./global/config.js');
 
+
+    /** https agent to handle request sending */
     const httpsAgent = (() => {
         const options = {
             'keepAlive': true,
@@ -23,6 +25,7 @@
         return new https.Agent(options);
     })();
 
+    /** http agent to handle request sending */
     const httpAgent = (() => {
         const options = {
             'keepAlive': true,
@@ -32,17 +35,18 @@
     })();
 
 
+    // ------------------------------- class -------------------------------
 
     /** Emits requests to the bilibili API */
     class Bilibili {
 
         /**
-         * Send request, gets json as response
-         * 发送请求，获取json返回
+         * Send request, returns as json
          * 
-         * @params  options    request details
-         * @params  useHttps   true: https   false: http
-         * @returns promise -> json / error
+         * @static
+         * @param   {Object}    options    - request details
+         * @param   {boolean}   useHttps   - if https should be used
+         * @returns {Promise}   promise -> json / error
          */
         static request(options, useHttps=true, data='') {
 
@@ -104,6 +108,13 @@
             return doRequest();
         }
 
+        /**
+         * Gets raffle info in a given room (APP API)
+         *
+         * @static
+         * @params  {Integer}   roomid
+         * @returns {Promise}   resolve(json)   reject(String)
+         */
         static appGetRaffleInRoom(roomid) {
             const host = 'api.live.bilibili.com';
             const path = '/xlive/lottery-interface/v1/lottery/getLotteryInfo';
@@ -127,8 +138,13 @@
             return Bilibili.request(options, false);
         }
 
-        /** Check for lottery in room ``roomid``
+        /**
+         * Check for lottery in room ``roomid``
          *
+         * @static
+         * @params  {Integer}   roomid
+         * @params  {Object}    cookies - defaults to null
+         * @returns {Promise}   resolve(json)   reject(String)
          */
         static getRaffleInRoom(roomid, cookies=null) {
             const host = 'api.live.bilibili.com';
@@ -148,16 +164,10 @@
         }
 
         /**
-         * 永久监听目标
-         * @returns     Promise -> Array[int]
-         */
-        static getFixedRooms() {
-            return Bilibili.getAllSailboatRooms();
-        }
-
-        /**
-         * 大航海榜
-         * @returns     Promise -> Array[int]
+         * Get sailboat rooms from rank API
+         *
+         * @static
+         * @returns {Promise}   resolve(json)   reject(String)
          */
         static getAllSailboatRooms() {
             const MAX_PAGES = 3;
@@ -184,6 +194,14 @@
             return result;
         }
 
+
+        /**
+         * Get sailboat rooms from rank API
+         *
+         * @static
+         * @params  {Integer}   page    - page of the API, valid values: [1,2,3]
+         * @returns {Promise}   resolve(json)   reject(String)
+         */
         static getSailboatRooms(page) {
             // Page 1-3 (Rank 0-50)
             const url = 'api.live.bilibili.com';
@@ -209,8 +227,10 @@
         }
 
         /**
-         * 元气榜(月)
-         * @returns     Promise -> Array[int]
+         * Get rooms from genki rank API
+         *
+         * @static
+         * @returns     {Promise}   resolve(json)   reject(String)
          */
         static getAllGenkiRooms() {
             const MAX_PAGES = 3;
@@ -237,6 +257,12 @@
             return result;
         }
 
+        /**
+         * Get rooms from genki rank API
+         *
+         * @static
+         * @param   {Integer}   page    - page of API
+         */
         static getGenkiRooms(page) {
             const url = 'api.live.bilibili.com';
             const path = '/rankdb/v1/Rank2018/getWebTop';
@@ -263,7 +289,12 @@
 
         /** 
          * Get streaming roomd in area ``areaid``
-         * @return promise -> [ { 'roomid': roomid, 'online': online }, ... ]
+         * 
+         * @static
+         * @param   {Integer}   areaid
+         * @param   {Integer}   size
+         * @param   {Integer}   count
+         * @returns {Promise}   resolve([ { 'roomid': roomid, 'online': online }, ... ])
          */
         static getRoomsInArea(areaid, size=99, count=Infinity) {
             const url = 'api.live.bilibili.com';
@@ -283,7 +314,7 @@
             const promise = Bilibili.getLiveCount().catch(error => {
 
                 cprint(`${Bilibili.getLiveCount.name} - ${error}`, colors.red);
-                return 5000;    // 出错则返回默认5000
+                return 5000;    // on error return 5000
 
             }).then(room_count => {
 
@@ -316,7 +347,7 @@
                                 resolve(rooms_info);
                             }
                         }).catch((error) => {
-                            reject(`${getRoomsInArea} - ${error}`);
+                            reject(`getRoomsInArea - ${error}`);
                         });
 
                     }).catch(error => {
@@ -342,7 +373,10 @@
         }
 
         /**
+         * Get number of rooms streaming
          *
+         * @static
+         * @returns {Promise}   resolve(Integer)    reject(String)
          */
         static getLiveCount() {
             const url = 'api.live.bilibili.com';
@@ -374,6 +408,12 @@
             });
         }
 
+        /**
+         * Get gift configuration, including id, name, etc
+         *
+         * @static
+         * @returns     {Promise}   resolve(json)   reject(String)
+         */
         static getGiftConfig() {
             const url = 'api.live.bilibili.com';
             const path = '/gift/v4/Live/giftConfig';
@@ -390,6 +430,12 @@
             return rateLimiter.request(options, false);
         }
 
+        /**
+         * Get rooms in each of the six areas
+         *
+         * @static
+         * @returns     {Promise}   resolve([ Array(Integer), Array(Integer), ... ])    reject(String)
+         */
         static getRoomsInEachArea() {
             const url = 'api.live.bilibili.com';
             const path = '/room/v3/area/getRoomList';
@@ -423,7 +469,60 @@
             return promises;    // a list of promises, each element is list of rooms in an area
         }
 
-        static isLive(roomid) {
+        /**
+         * Get guard list in room
+         *
+         * @param       {Integer}   roomid
+         * @param       {Integer}   uid
+         * @returns     {Promise}   resolve(json)   reject(String)
+         */
+        static getGuardList(roomid, uid=null) {
+            const url = 'api.live.bilibili.com';
+            const path = '/xlive/app-room/v1/guardTab/topList';
+            const method = 'GET';
+            const headers = webHeaders;
+            const params = {
+                'roomid': roomid,
+                'ruid': uid,
+                'page': 1,
+                'page_size': 10,
+            };
+
+            if (uid !== null) {
+                const paramstr = Bilibili.formatForm(params);
+                const options = {
+                    'host': url,
+                    'path': `${path}?${paramstr}`,
+                    'method': method,
+                    'headers': headers,
+                };
+                return rateLimiter.request(options, false);
+            }
+
+            return Bilibili.getRoomInfo(roomid).then(resp => {
+                const code = resp['code'];
+                if (code !== 0) {
+                    return Promise.reject(`Failed to getRoomInfo`);
+                }
+                params['ruid'] = resp['data']['uid'];
+                const paramstr = Bilibili.formatForm(params);
+                const options = {
+                    'host': url,
+                    'path': `${path}?${paramstr}`,
+                    'method': method,
+                    'headers': headers,
+                };
+                return rateLimiter.request(options, false);
+            });
+        }
+
+        /**
+         * Get basic info of a room
+         *
+         * @static
+         * @param       {Integer}   roomid
+         */
+        static getRoomInfo(roomid) {
             const url = 'api.live.bilibili.com';
             const path = '/room/v1/Room/room_init';
             const method = 'GET';
@@ -439,8 +538,19 @@
                 'headers': headers, 
             };
 
+            return rateLimiter.request(options, false);
+        }
+
+        /**
+         * Check if a room is streaming
+         *
+         * @static
+         * @param   {Integer}   roomid
+         * @returns {Promise}   resolve(boolean)    reject(String)
+         */
+        static isLive(roomid) {
             return new Promise((resolve, reject) => {
-                rateLimiter.request(options, false).then((jsonObj) => {
+                Bilibili.getRoomInfo(roomid).then((jsonObj) => {
                     const isLive = jsonObj['data']['live_status'] === 1 ? true : false;
                     resolve(isLive);
                 }).catch((error) => {
@@ -449,10 +559,24 @@
             });
         }
 
+        /**
+         * Perform md5 hashing on the passed in String and the app_secret
+         *
+         * @static
+         * @param   {String}    string  - string to be hashed
+         * @returns {String}    hashed result
+         */
         static appSign(string) {
             return crypto.createHash('md5').update(string+appSecret).digest('hex');
         }
 
+        /**
+         * Concatenate sign value to the end of the param string
+         *
+         * @static
+         * @param   {String}    params  - formatted parameter
+         * @returns {String}    params with sign appended
+         */
         static parseAppParams(params) {
             const pre_paramstr = Bilibili.formatForm(params);
             const sign = Bilibili.appSign(pre_paramstr);
@@ -460,6 +584,13 @@
             return paramstr;
         }
 
+        /**
+         * Parses parameters into string form
+         *
+         * @static
+         * @param   {Object}    form    - Object to be formatted into querystring
+         * @returns {String}    formatted querystring
+         */
         static formatForm(form) {
             const formattedForm = querystring.stringify(form, '&', '=');
             return formattedForm;
@@ -468,16 +599,18 @@
 
     /**
      * Sort the properties according to alphabetical order
+     *
+     * @param   {Object}    object  - Object to be sorted by keys
+     * @returns {Object}    with keys sorted
      */
     const sort = (object) => {
-        const sorted = Object.create(null);
+        const sorted = {};
         Object.keys(object).sort().forEach(key => {
             sorted[key] = object[key];
         });
         return sorted;
     };
 
-    // const rateLimiter = new RateLimiter(Bilibili);
     const rateLimiter = Bilibili;
 
     module.exports = Bilibili;

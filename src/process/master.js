@@ -53,6 +53,9 @@
             if (this.running === false) {
                 this.running = true;
 
+                this.history.run();
+                this.db.run();
+
                 // spawns worker processes
                 this.createProcesses();
 
