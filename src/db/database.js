@@ -99,7 +99,11 @@
         updateLocal(data) {
             try {
                 const roomInfo = JSON.parse(data);
-                Object.assign(this.roomInfo, roomInfo);
+                Object.keys(roomInfo).forEach(roomid => {
+                    if (!this.roomInfo[roomid]) {
+                        this.roomInfo[roomid] = roomInfo[roomid];
+                    }
+                });
             } catch (error) {
                 result = Promise.reject(error);
             }
