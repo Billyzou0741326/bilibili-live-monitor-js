@@ -265,6 +265,7 @@
         constructor(roomid, targets=0b11111111) {
             super(roomid);
             this.targets = targets;
+            this.peak_popularity = 0;
         }
 
         /**
@@ -499,6 +500,10 @@
         }
 
         onPopularity(popularity) {
+            let result = super.onPopularity(popularity);
+            this.peak_popularity = Math.max(this.peak_popularity, popularity);
+            this.peak_popularity = this.peak_popularity || 0;
+            return result;
         }
 
     }
@@ -679,13 +684,39 @@
             return result;
         }
 
+        /**
+         * If popularity renders too low for 10 heartbeats (~5 min)
+         *      - Check if streaming, if not then:
+         *          - Check peak_popularity during stream, >50000 mark as to_fixed
+         *          - Close connection
+         *      - Otherwise, it's streaming:
+         *          - Clear the offTimes counter to 0
+         */
         onPopularity(popularity) {
+            let result = super.onPopularity(popularity);
+
             if (popularity <= 1) {
                 ++this.offTimes;
-                if (this.offTimes > 10) this.close();
+                if (this.offTimes > 10) {
+
+                    Bilibili.isLive(this.roomid).then(streaming => {
+
+                        if (streaming === true) {
+                            this.offTimes = 0;
+                            return null;
+                        }
+
+                        if (this.peak_popularity > 50000) {
+                            this._toFixed = true;
+                        }
+                        this.close();
+                    });
+                }
             } else {
                 this.offTimes = 0;
             }
+
+            return result;
         }
 
     }
@@ -736,7 +767,7 @@
             if (popularity <= 1) {
                 Bilibili.isLive(this.roomid).then(streaming => {
                     if (streaming === false) {
-                        super.close();
+                        this.close();
                     }
                 }).catch(error => {
                     cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
