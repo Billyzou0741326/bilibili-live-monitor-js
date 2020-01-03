@@ -4,11 +4,49 @@
 
     const settings = require('../settings.json');
     const EventEmitter = require('events').EventEmitter;
+    const dns = require('dns');
 
     const wsUri = {
-        'host': 'broadcastlv.chat.bilibili.com',
+        'host': function(current){
+            if(this.hosts.length==0){
+                return this.hostname;
+            }
+            // 重连
+            if (current) {
+                this.loss[this.hosts.indexOf(current)]++;
+                let tempi = 0;
+                let tempv = this.loss[this.hosts.indexOf(current)];
+                for (let i in this.loss){
+                    if (this.loss[i]<tempv) {
+                        tempi = i;
+                        tempv = this.loss[i];
+                    }
+                }
+                if (this.loss[this.hosts.indexOf(current)] > 100){
+                    for (let i in this.loss){
+                        this.loss[i] = Math.round(this.loss[i]/10);
+                    }
+                }
+                return this.hosts[tempi];
+            }
+            // 初始连接
+            if(this.mark<this.hosts.length){
+                this.mark++
+            } else {
+                this.mark = 1;
+            }
+            return this.hosts[this.mark-1];
+        },
         'port': 2243,
+        'hostname': 'broadcastlv.chat.bilibili.com',
+        'hosts': [],
+        'mark': 0,
+        'loss': [0,0,0,0],
     };
+
+    dns.resolve(wsUri.hostname, function(err, address, family){
+        wsUri.hosts = address;
+    })
 
     const lh = '127.0.0.1';
     const wsServer = {

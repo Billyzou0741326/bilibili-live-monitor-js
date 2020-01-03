@@ -38,7 +38,7 @@
 
             this.setMaxListeners(15);
 
-            this.host = wsUri.host;
+            this.host = wsUri.host();
             this.port = wsUri.port;
 
             this.roomid = roomid || 0;
@@ -112,7 +112,7 @@
             this.healthCheck = setInterval(() => {
                 if (+new Date() - this.lastRead > 35 * 1000)
                     this.close(false);
-            }, 45 * 1000);  // 每45秒检查读取状态 如果没读取到任何信息即重连
+            }, 20 * 1000);  // 每45秒检查读取状态 如果没读取到任何信息即重连
         }
 
         onError(error) {
@@ -134,6 +134,8 @@
         onClose() {
             this.reset();
             if (this.closed_by_user === false) {
+                // cprint(`房间@${this.roomid}掉线${this.host}`, colors.red);
+                this.host = wsUri.host(this.host);
                 this.run();
             } else {
                 this.emit('close');
