@@ -112,7 +112,7 @@
             this.healthCheck = setInterval(() => {
                 if (+new Date() - this.lastRead > 35 * 1000)
                     this.close(false);
-            }, 20 * 1000);  // 每45秒检查读取状态 如果没读取到任何信息即重连
+            }, 10000);  // 每10秒检查读取状态 如果没读取到任何信息即重连
         }
 
         onError(error) {

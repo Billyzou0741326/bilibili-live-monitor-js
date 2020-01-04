@@ -8,44 +8,52 @@
 
     const wsUri = {
         'host': function(current){
+            // 未获取IP
             if(this.hosts.length==0){
                 return this.hostname;
             }
-            // 重连
+            // 最近重连统计，到100次按比例重置
             if (current) {
                 this.loss[this.hosts.indexOf(current)]++;
-                let tempi = 0;
-                let tempv = this.loss[this.hosts.indexOf(current)];
-                for (let i in this.loss){
-                    if (this.loss[i]<tempv) {
-                        tempi = i;
-                        tempv = this.loss[i];
-                    }
-                }
                 if (this.loss[this.hosts.indexOf(current)] > 100){
-                    for (let i in this.loss){
-                        this.loss[i] = Math.round(this.loss[i]/10);
+                    for (let [i,v] of this.loss.entries()){
+                        this.loss[i] = Math.ceil(v/10);
                     }
                 }
-                return this.hosts[tempi];
             }
-            // 初始连接
-            if(this.mark<this.hosts.length){
-                this.mark++
-            } else {
-                this.mark = 1;
+            // 筛选掉线率低IP
+            let lasti = this.hosts.indexOf(this.lastip[this.lastip.length-1]);
+            let tempv = this.loss[lasti];
+            let goodip = [];
+            for (let [i,v] of this.loss.entries()){
+                if (i != lasti && v/tempv <1.1) {
+                    goodip.push(this.hosts[i]);
+                    tempv = v;
+                } 
             }
-            return this.hosts[this.mark-1];
+            // 根据最后IP连接记录轮换掉线率低IP
+            for (let [i,v] of this.lastip.entries()) {
+                if (goodip.indexOf(v) != -1){
+                    this.lastip.push(v);
+                    this.lastip.splice(i,1);
+                    break;
+                }
+            }
+            return this.lastip[this.lastip.length-1];
         },
         'port': 2243,
         'hostname': 'broadcastlv.chat.bilibili.com',
         'hosts': [],
-        'mark': 0,
-        'loss': [0,0,0,0],
+        'loss': [],
+        'lastip':[],
     };
 
     dns.resolve(wsUri.hostname, function(err, address, family){
         wsUri.hosts = address;
+        wsUri.lastip = wsUri.hosts;
+        for (let [i,v] of wsUri.hosts.entries()) {
+            wsUri.loss[i] = 1;
+        }
     })
 
     const lh = '127.0.0.1';
