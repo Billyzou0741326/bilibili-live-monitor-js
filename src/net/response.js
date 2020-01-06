@@ -2,6 +2,10 @@
 
     'use strict';
 
+    const querystring = require('querystring');
+    const cprint = require('../util/printer.js');
+    const colors = require('colors/safe');
+
     class Response {
 
         constructor(options) {
@@ -23,6 +27,23 @@
 
         json() {
             return JSON.parse(this.text());
+        }
+
+        cookies() {
+            let cookies = {};
+            if (this.headers) {
+                const setCookie = this.headers['set-cookie'];
+                setCookie && setCookie.forEach(c => {
+                    try {
+                        const cookieJar = c.split('; ');
+                        const cookieItem = cookieJar[0].split('=');
+                        cookies[cookieItem[0]] = cookieItem[1];
+                    } catch (error) {
+                        cprint(`\n${error.stack}`, colors.red);
+                    }
+                });
+            }
+            return cookies;
         }
 
         text() {
