@@ -12,28 +12,14 @@
             if(this.hosts.length==0){
                 return this.hostname;
             }
-            // 最近重连统计，到100次按比例重置
-            if (current) {
+            // 记录掉线IP。
+            if (current && current != this.hostname) {
+                // console.log('掉线'+current);
                 this.loss[this.hosts.indexOf(current)]++;
-                if (this.loss[this.hosts.indexOf(current)] > 100){
-                    for (let [i,v] of this.loss.entries()){
-                        this.loss[i] = Math.ceil(v/10);
-                    }
-                }
-            }
-            // 筛选掉线率低IP
-            let lasti = this.hosts.indexOf(this.lastip[this.lastip.length-1]);
-            let tempv = this.loss[lasti];
-            let goodip = [];
-            for (let [i,v] of this.loss.entries()){
-                if (i != lasti && v/tempv <1.1) {
-                    goodip.push(this.hosts[i]);
-                    tempv = v;
-                } 
-            }
-            // 根据最后IP连接记录轮换掉线率低IP
+            }            
+            // 根据goodip列表轮换IP
             for (let [i,v] of this.lastip.entries()) {
-                if (goodip.indexOf(v) != -1){
+                if (this.goodip.indexOf(v) != -1){
                     this.lastip.push(v);
                     this.lastip.splice(i,1);
                     break;
@@ -43,17 +29,37 @@
         },
         'port': 2243,
         'hostname': 'broadcastlv.chat.bilibili.com',
-        'hosts': [],
-        'loss': [],
-        'lastip':[],
+        'hosts': [], //DNS返回IP列表
+        'loss': [], //实时掉线统计,对应hosts列表
+        'lastloss': [], //前一时间段掉线统计,对应hosts列表
+        'lastip': [], //IP连接顺序
+        'goodip': [], //网络较好IP
     };
 
+    //初始化IP数据
     dns.resolve(wsUri.hostname, function(err, address, family){
         wsUri.hosts = address;
         wsUri.lastip = wsUri.hosts;
+        wsUri.goodip = wsUri.hosts;
         for (let [i,v] of wsUri.hosts.entries()) {
-            wsUri.loss[i] = 1;
+            wsUri.loss[i] = 0;
+            wsUri.lastloss[i] = 0;
         }
+        // 更新重置掉线统计
+        function update(){
+            wsUri.lastloss = wsUri.loss;
+            wsUri.loss = wsUri.loss.map(v =>0);
+            //更新网络较好IP列表
+            let minloss = Math.min(...wsUri.lastloss);
+            let goodip = [];
+            for (let [i,v] of wsUri.lastloss.entries()){
+                if (v-minloss < 1) {
+                    goodip.push(wsUri.hosts[i]);
+                }
+            }
+            wsUri.goodip = goodip;
+        }
+        setInterval(update,30 * 1000)
     })
 
     const lh = '127.0.0.1';
