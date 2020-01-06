@@ -15,6 +15,7 @@
     class HttpHost {
 
         constructor(history, options) {
+            this.bind();
             if (options && options.host)
                 this.host = options.host;
             else
@@ -30,10 +31,23 @@
             this.server = null;
         }
 
+        bind() {
+            this.pageNotFound = this.pageNotFound.bind(this);
+        }
+
+        pageNotFound(error, request, response, next) {
+            if (error) {
+                response.send('<h1> Errored </h1>');
+                return null;
+            }
+            response.send('<h1> Page Not Found </h1>');
+        }
+
         run() {
             this.router.run();
             this.app.set('json spaces', 4);
             this.app.use('/', this.router.getRouter());
+            this.app.use('/', this.pageNotFound);
             this.server = http.createServer(this.app).listen(this.port, this.host);
             this.server.on('error', error => {
                 if (error.code === 'EADDRINUSE') {
