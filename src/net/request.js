@@ -62,7 +62,7 @@
         }
 
         withData(data) {
-            if (typeof params !== 'string' && params instanceof String === false) {
+            if (typeof data !== 'string' && data instanceof String === false) {
                 data = RequestBuilder.formatParams(sort(data));
             }
             this.data = data;
