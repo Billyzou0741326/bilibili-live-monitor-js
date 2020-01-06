@@ -20,10 +20,12 @@
         bind() {
             this.guardHandler = this.guardHandler.bind(this);
             this.giftHandler = this.giftHandler.bind(this);
+            this.setCors = this.setCors.bind(this);
         }
 
         run() {
             if (this.started === false) {
+                this.router.use('/', this.setCors);
                 this.router.get('/guard', this.guardHandler);
                 this.router.get('/gift', this.giftHandler);
                 this.started = true;
@@ -34,13 +36,28 @@
             return this.router;
         }
 
+        setCors(request, response, next) {
+            response.append('Access-Control-Allow-Origin', ['*']);
+            response.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+            response.append('Access-Control-Allow-Headers', 'Content-Type');
+            next();
+        }
+
         giftHandler(request, response) {
             const gifts = this.history.get('gift');
+            response.set({
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            });
             response.jsonp(gifts);
         }
 
         guardHandler(request, response) {
             const guards = this.history.get('guard');
+            response.set({
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            });
             response.jsonp(guards);
         }
     }
