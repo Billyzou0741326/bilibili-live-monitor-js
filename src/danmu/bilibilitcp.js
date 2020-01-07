@@ -147,7 +147,6 @@
          * @param   {Buffer}    buffer  - for Network I/O
          */
         onData(buffer) {
-            this.lastRead = +new Date();
             this.buffer = Buffer.concat([ this.buffer, buffer ]);
             if (this.totalLength <= 0 && this.buffer.length >= 4)
                 this.totalLength = this.buffer.readUInt32BE(0);
@@ -202,6 +201,7 @@
                 case 3:
                     const popularity = buffer.readUInt32BE(headerLength);
                     this.onPopularity(popularity);
+                    this.lastRead = new Date();
                     break;
                 case 5:
                     jsonStr = buffer.toString('utf8', headerLength, totalLength);
