@@ -201,6 +201,7 @@
                         this.emit('add_fixed', roomid);
                     }
                 })
+                .on('add_to_db', () => this.emit('add_to_db', roomid))
                 .on('roomid', (roomid) => this.roomidHandler.enqueue(roomid))
                 .on('guard', (g) => this.emit('guard', g))
                 .on('gift', (g) => this.emit('gift', g))
