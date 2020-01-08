@@ -9,18 +9,32 @@
     class Request {
 
         constructor(options) {
+            /**
             const {
                 host,
                 path,
                 port,
                 https,
+                cookies,
                 method,
                 params,
                 data,
                 headers,
                 contentType, } = options;
+            // */
             Object.assign(this, options);
             Object.freeze(this);
+        }
+
+        toHttpOptions() {
+            const options = {
+                host:       this.host,
+                port:       this.port,
+                path:       this.path,
+                method:     this.method,
+                headers:    this.headers,
+            };
+            return options;
         }
 
     }
@@ -30,6 +44,14 @@
         static formatParams(params) {
             const formattedParams = querystring.stringify(params, '&', '=');
             return formattedParams;
+        }
+
+        static formatCookies(cookies) {
+            const options = {
+                'encodeURIComponent': querystring.unescape,
+            };
+            const formattedCookies = querystring.stringify(cookies, '; ', '=', options);
+            return formattedCookies;
         }
 
         static start() {
@@ -52,12 +74,20 @@
         }
 
         withMethod(method) {
-            this.method = method;
+            this.method = method.toUpperCase();
             return this;
         }
 
         withHttps() {
             this.https = true;
+            return this;
+        }
+
+        withCookies(cookies) {
+            if (typeof cookies !== 'string' && cookies instanceof String === false) {
+                cookies = RequestBuilder.formatCookies(cookies);
+            }
+            this.cookies = cookies;
             return this;
         }
 
@@ -97,6 +127,11 @@
             this.data = this.data || '';
             this.headers = this.headers || { 'Connection': 'close' };
             this.contentType = this.contentType || 'application/x-www-form-urlencoded';
+            if (this.cookies) {
+                const headers = { 'Cookie': this.cookies };
+                Object.assign(headers, this.headers);
+                this.headers = headers;
+            }
             return new Request(this);
         }
     }

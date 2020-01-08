@@ -646,9 +646,6 @@
             if (result !== null) {
                 ++this.newAnchorCount;
             }
-            if (this.toFixed()) {
-                this.close();
-            }
             return result;
         }
 
@@ -656,9 +653,6 @@
             const result = super.onRaffle(msg);
             if (result !== null) {
                 ++this.newGiftCount;
-            }
-            if (this.toFixed()) {
-                this.close();
             }
             return result;
         }
@@ -668,9 +662,6 @@
             if (result !== null) {
                 ++this.newGiftCount;
             }
-            if (this.toFixed()) {
-                this.close();
-            }
             return result;
         }
 
@@ -678,9 +669,6 @@
             const result = super.onGuard(msg);
             if (result !== null) {
                 ++this.newGuardCount;
-            }
-            if (this.toFixed()) {
-                this.close();
             }
             return result;
         }
