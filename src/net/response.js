@@ -22,7 +22,7 @@
         }
 
         isOk() {
-            return this.status === 200;
+            return this.status_code === 200;
         }
 
         json() {
