@@ -58,6 +58,7 @@
             }
 
             const options = req.toHttpOptions();
+            options['agent'] = agent;
 
             return new Promise((resolve, reject) => {
 
@@ -99,6 +100,7 @@
             }
 
             const options = req.toHttpOptions();
+            options['agent'] = agent;
 
             return new Promise((resolve, reject) => {
 
