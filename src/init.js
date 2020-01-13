@@ -52,6 +52,9 @@
         if (process.argv.includes('--debug')) {
             config.debug = true;
         }
+        if (process.argv.includes('--debug-http')) {
+            config.debugHttp = true;
+        }
 
         config.wsServer['self']['host'] = settings['wsServer']['self']['ip'];
         config.wsServer['self']['port'] = settings['wsServer']['self']['port'];

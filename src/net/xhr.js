@@ -7,6 +7,7 @@
     const querystring = require('querystring');
     const ResponseBuilder = require('./response.js');
     const HttpError = require('./httperror.js');
+    const VirtualQueue = require('./queue.js');
 
     class Xhr {
 
@@ -15,16 +16,7 @@
         }
 
         constructor() {
-            this.blocked = false;
-            this.unblockedAt = 0;
-            this.statusCallback = {
-                "200": () => {
-                },
-                "412": () => {
-                    this.blocked = true;
-                    this.unBlockedAt = 1000 * 60 * 61 + new Date();
-                },
-            };
+            this.q = new VirtualQueue(30);
         }
 
         isBlocked() {
@@ -41,9 +33,9 @@
 
         request(req) {
             if (req.method === 'GET') {
-                return this.get(req);
+                return this.q.add().then(() => this.get(req));
             } else if (req.method === 'POST') {
-                return this.post(req);
+                return this.q.add().then(() => this.post(req));
             }
             return Promise.reject(
                 new HttpError(`Request method '${req.method}' not Implemented`));
@@ -63,12 +55,24 @@
             return new Promise((resolve, reject) => {
 
                 if (this.isBlocked() === true) {
-                    const err = new HttpError('412 Precondition Failing (estimation)');
+                    const err = new HttpError('412 Precondition Fails (estimation)');
                     reject(err);
                     return null;
                 }
 
                 const request = (this.sendRequest(options, xhr, req.data)
+                    .on('abort', () => {
+                        const err = new HttpError('Http request aborted');
+                        reject(err);
+                    })
+                    .on('error', error => {
+                        const err = new HttpError(error.message);
+                        reject(err);
+                    })
+                    .on('close', () => {
+                        const err = new HttpError('Http request closed');
+                        reject(err);
+                    })
                     .on('response', response => {
                         const code = response.statusCode;
 
@@ -81,11 +85,10 @@
                                 this.makeResponse(
                                     response, request, Buffer.concat(dataSequence))));
                         } else {
-                            resolve(
-                                this.makeResponse(response, request));
+                            const err = (new HttpError(`http status ${code}`)
+                                .withStatus(code));
+                            reject(err);
                         }
-
-                        this.statusCallback[code] && this.statusCallback[code]();
                     })
                 );
             });
@@ -105,17 +108,33 @@
             return new Promise((resolve, reject) => {
 
                 if (this.isBlocked() === true) {
-                    const err = new HttpError('412 Precondition Failing (estimation)');
+                    const err = new HttpError('412 Precondition Fails (estimation)');
                     reject(err);
                     return null;
                 }
 
                 const request = (this.sendRequest(options, xhr, req.data)
+                    .on('timeout', () => {
+                        request.abort();
+                    })
+                    .on('abort', () => {
+                        const err = new HttpError('Http request aborted');
+                        reject(err);
+                    })
+                    .on('error', error => {
+                        const err = new HttpError(error.message);
+                        reject(err);
+                    })
+                    .on('close', () => {
+                        const err = new HttpError('Http request closed');
+                        reject(errr);
+                    })
                     .on('response', response => {
                         const code = response.statusCode;
 
                         const dataSequence = [];
                         response.on('data', data => dataSequence.push(data));
+                        response.on('aborted', () => reject(new HttpError('Http request aborted')));
                         response.on('error', error => reject(error));
 
                         if (code === 200) {
@@ -123,26 +142,17 @@
                                 this.makeResponse(
                                     response, request, Buffer.concat(dataSequence))));
                         } else {
-                            resolve(
-                                this.makeResponse(response, request));
+                            const err = (new HttpError(`http stauts ${code}`)
+                                .withStatus(code));
+                            reject(err);
                         }
-
-                        this.statusCallback[code] && this.statusCallback[code]();
                     }));
             });
         }
 
         sendRequest(options, xhr, data) {
             if (!xhr) xhr = https;
-            let request = (xhr.request(options)
-                .on('timeout', () => {
-                    request.abort();
-                })
-                .on('abort', () => {
-                    const err = new HttpError('Http request aborted');
-                    reject(err);
-                })
-            );
+            let request = (xhr.request(options));
             if (data) {
                 request.write(data);
             }
