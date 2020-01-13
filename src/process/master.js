@@ -28,10 +28,10 @@
             this.workers[GIFT] = null;
             this.workers[FIXED] = null;
             this.workers[DYNAMIC_1] = null;
-            this.workers[DYNAMIC_2] = null;
+            // this.workers[DYNAMIC_2] = null;
 
             this.dynamicListUpdateWaiter1 = () => {};
-            this.dynamicListUpdateWaiter2 = () => {};
+            // this.dynamicListUpdateWaiter2 = () => {};
             this.fixedRooms = new Set();
             this.history = new History();
             this.db = new Database('record.json');
@@ -131,27 +131,19 @@
                 const responseWaiter1 = new Promise(resolve => {
                     this.dynamicListUpdateWaiter1 = resolve;
                 });
-                const responseWaiter2 = new Promise(resolve => {
-                    this.dynamicListUpdateWaiter2 = resolve;
-                });
 
                 // send query to worker
                 const dynamicWorkerMng1 = this.workers[DYNAMIC_1];
-                const dynamicWorkerMng2 = this.workers[DYNAMIC_2];
                 const dynamicWorker1 = dynamicWorkerMng1.getWorker();
-                const dynamicWorker2 = dynamicWorkerMng2.getWorker();
                 await dynamicWorkerMng1.waitOnline();
-                await dynamicWorkerMng2.waitOnline();
                 dynamicWorker1.send({ 'cmd': 'get_rooms' });
-                dynamicWorker2.send({ 'cmd': 'get_rooms' });
 
                 // wait for worker send back established rooms  ( onMessage resolves )
                 const establishedRooms = await (
-                    Promise.all([ responseWaiter1, responseWaiter2, ])
+                    Promise.all([ responseWaiter1, ])
                     .then(nestedList => {
                         const ls1 = nestedList[0].length;
-                        const ls2 = nestedList[1].length;
-                        cprint(`[ 动态 ] Monitoring ${ls1} + ${ls2} rooms`, colors.green);
+                        cprint(`[ 动态 ] Monitoring ${ls1} rooms`, colors.green);
                         return nestedList;
                     })
                     .then(nestedList => new Set([].concat(nestedList))));
@@ -166,13 +158,13 @@
                 if (config.verbose === true)
                     cprint(`Filtered out ${originalSize-filteredSize} rooms`, colors.green);
 
-                // split the remaining valid rooms
+                /** split the remaining valid rooms
                 const middle = Number.parseInt(newDynamicRooms.length / 2);
                 const list1 = newDynamicRooms.slice(0, middle);
                 const list2 = newDynamicRooms.slice(middle, newDynamicRooms.length);
+                // */
 
-                dynamicWorker1.send({ 'cmd': 'update_rooms', 'data': list1 });
-                dynamicWorker2.send({ 'cmd': 'update_rooms', 'data': list2 });
+                dynamicWorker1.send({ 'cmd': 'update_rooms', 'data': newDynamicRooms });
 
             })();
 
@@ -213,8 +205,6 @@
                     // setupDynamic response arrives
                     if (from === DYNAMIC_1) {
                         this.dynamicListUpdateWaiter1(data);
-                    } else if (from === DYNAMIC_2) {
-                        this.dynamicListUpdateWaiter2(data);
                     }
                     break;
 

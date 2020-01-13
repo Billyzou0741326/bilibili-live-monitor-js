@@ -26,8 +26,9 @@
         'port': settings['httpServer']['port'] || 9001,
     };
 
-    const verbose = false;
-    const debug = false;
+    let verbose = false;
+    let debug = false;
+    let debugHttp = false;
 
     const GIFT = 'GIFT';
     const FIXED = 'FIXED';
@@ -67,6 +68,65 @@
         'count': 0,
     };
 
+    read_args();
+
+    function read_args() {
+        if (process.argv.includes('-v')) {
+            verbose = true;
+        }
+        if (process.argv.includes('--debug')) {
+            debug = true;
+        }
+        if (process.argv.includes('--debug-http')) {
+            debugHttp = true;
+        }
+
+        wsServer['self']['host'] = settings['wsServer']['self']['ip'];
+        wsServer['self']['port'] = settings['wsServer']['self']['port'];
+        wsServer['bilive']['host'] = settings['wsServer']['bilive']['ip'];
+        wsServer['bilive']['port'] = settings['wsServer']['bilive']['port'];
+
+        const ipIndex = process.argv.indexOf('--ws-ip');
+        if (ipIndex !== -1) {
+            const i = ipIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const ip = process.argv[i + 1];
+                wsServer['self']['ip'] = ip;
+            }
+        }
+
+        const portIndex = process.argv.indexOf('--ws-port');
+        if (portIndex !== -1) {
+            const i = portIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const port = Number.parseInt(process.argv[i + 1]);
+                if (!isNaN(port)) {
+                    wsServer['self']['port'] = port;
+                }
+            }
+        }
+
+        const httpIpIndex = process.argv.indexOf('--http-ip');
+        if (httpIpIndex !== -1) {
+            const i = httpIpIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const ip = process.argv[i + 1];
+                httpServer['ip'] = ip;
+            }
+        }
+
+        const httpPortIndex = process.argv.indexOf('--http-port');
+        if (httpPortIndex !== -1) {
+            const i = httpPortIndex;
+            if (i + 1 < process.argv[i + 1]) {
+                const port = Number.parseInt(process.argv[i + 1]);
+                if (!isNaN(port)) {
+                    httpServer['port'] = port;
+                }
+            }
+        }
+    }
+
     module.exports = {
         GIFT,
         FIXED,
@@ -81,6 +141,7 @@
         webHeaders,
         verbose,
         debug,
+        debugHttp,
         error,
     };
 
