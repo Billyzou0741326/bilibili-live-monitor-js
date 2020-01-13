@@ -253,32 +253,44 @@
         }
 
         setupMonitorInArea(areaid, rooms) {
-            rooms.forEach((roomid) => {
 
-                Bilibili.isLive(roomid).then((streaming) => {
-                    if (streaming && !this.connections.has(areaid)) {
+            const task = async () => {
 
-                        const dmlistener = new RaffleMonitor(roomid, areaid);
-                        this.connections.set(areaid, dmlistener);
+                let done = false;
+                const max = rooms.length;
 
-                        const msg = `Setting up monitor @room ${roomid.toString().padEnd(13)}`
+                for (let i = 0; !done && i < max; ++i) {
+                    try {
+                        const roomid = rooms[i];
+                        const streaming = await Bilibili.isLive(roomid);
+                        if (streaming && !this.connections.has(areaid)) {
+
+                            done = true;
+                            const dmlistener = new RaffleMonitor(roomid, areaid);
+                            this.connections.set(areaid, dmlistener);
+
+                            const msg = `Setting up monitor @room `
+                                + `${roomid.toString().padEnd(13)}`
                                 + `in ${this.areaname[areaid]}区`;
-                        cprint(msg, colors.green);
-                        (dmlistener
-                            .on('close', () => {
-                                const reason = `@room ${roomid} in ${this.areaname[areaid]}区 is closed.`;
-                                cprint(reason, colors.yellow);
-                                this.connections.delete(areaid);
-                                this.recoverArea(areaid);
-                            })
-                            .on('roomid', (roomid) => this.roomidHandler.enqueue(roomid))
-                            .on('storm', g => this.emit('storm', g)));
-                        dmlistener.run();
+                            cprint(msg, colors.green);
+                            (dmlistener
+                                .on('close', () => {
+                                    const reason = `@room ${roomid} in ${this.areaname[areaid]}区 is closed.`;
+                                    cprint(reason, colors.yellow);
+                                    this.connections.delete(areaid);
+                                    this.recoverArea(areaid);
+                                })
+                                .on('roomid', (roomid) => this.roomidHandler.enqueue(roomid))
+                                .on('storm', g => this.emit('storm', g)));
+                            dmlistener.run();
+                        }
+                    } catch (error) {
+                        cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
                     }
-                }).catch((error) => {
-                    cprint(`${Bilibili.isLive.name} - ${error}`, colors.red);
-                });
-            });
+                }
+            };
+
+            task();
         }
 
         recoverArea(areaid) {

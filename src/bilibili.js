@@ -11,12 +11,20 @@
     const cprint = require('./util/printer.js');
     const Xhr = require('./net/xhr.js');
     const RequestBuilder = require('./net/request.js');
-    const { 
+    const config = require('./global/config.js');
+    const {
         appCommon,
         appSecret,
         appHeaders,
         webHeaders, } = require('./global/config.js');
 
+    const stats = {};   // url -> count
+    setInterval(() => {
+        const keys = Object.keys(stats);
+        if (config.debugHttp === true && keys.length > 0)
+            cprint(`\n${JSON.stringify(stats, null, 4)}`, colors.magenta);
+        keys.forEach(key => delete stats[key]);
+    }, 1000 * 60);
 
     // ------------------------------- class -------------------------------
 
@@ -27,21 +35,31 @@
          * Send request, returns as json
          * 
          * @static
-         * @param   {Object}    options    - request details
-         * @param   {boolean}   useHttps   - if https should be used
+         * @param   {Request}   req    - request details
          * @returns {Promise}   promise -> json / error
          */
         static request(req) {
 
             let tries = 3;
+            const noRetryStatus = [ 412 ];
 
+            const url = `${req.host}${req.path.split('?')[0]}`;
             const doRequest = async () => {
+                let result = null;
                 for (let i = 0; i < tries; ++i) {
                     try {
-                        let result = await newRequest();
+                        if (stats) {
+                            if (Number.isInteger(stats[url]) === false)
+                                stats[url] = 0;
+                            ++stats[url];
+                        }
+                        result = await newRequest();
                         return result;
                     } catch (error) {
                         cprint(`HttpError: ${error.message}`, colors.red);
+                        if (error.status && noRetryStatus.includes(error.status)) {
+                            throw error;
+                        }
                         cprint(`[ 修正 ${i} ]: 重现request`, colors.green);
                     }
                 }
@@ -57,7 +75,7 @@
          * Gets raffle info in a given room (APP API)
          *
          * @static
-         * @params  {Integer}   roomid
+         * @param   {Integer}   roomid
          * @returns {Promise}   resolve(json)   reject(String)
          */
         static appGetRaffleInRoom(roomid) {
@@ -139,7 +157,7 @@
          * Get sailboat rooms from rank API
          *
          * @static
-         * @params  {Integer}   page    - page of the API, valid values: [1,2,3]
+         * @param   {Integer}   page    - page of the API, valid values: [1,2,3]
          * @returns {Promise}   resolve(json)   reject(String)
          */
         static getSailboatRooms(page) {
