@@ -15,6 +15,8 @@
 
             this.worker = cluster.worker;
             this.worker.on('message', this.onMessage);
+            this.worker.on('disconnect', this.onDisconnect);
+            this.worker.on('error', this.onError);
 
             if (config.verbose === false) {
                 config.verbose = (process.env['verbose'] === 'true');
@@ -22,8 +24,10 @@
         }
 
         bind() {
-            this.onMessage = this.onMessage.bind(this);
             this.onGift = this.onGift.bind(this);
+            this.onError = this.onError.bind(this);
+            this.onMessage = this.onMessage.bind(this);
+            this.onDisconnect = this.onDisconnect.bind(this);
         }
 
         onGift(type) {
@@ -35,6 +39,15 @@
                 msg['data'] = gift;
                 process.send(msg);
             };
+        }
+
+        onDisconnect() {
+            process.exit(1);
+        }
+
+        onError(error) {
+            cprint(`${error.message}`, colors.red);
+            process.exit(1);
         }
 
         onMessage(msg) {
