@@ -31,6 +31,9 @@
                 const worker = cluster.fork(env);
                 const id = worker.id;
                 workermng = new WorkerManager(worker);
+                workermng.on('online', () => {
+                    cprint(`${name.toUpperCase()} worker online`, colors.green);
+                });
 
                 this.workerOfName[name] = workermng;
                 this.workerOfId[id] = workermng;
@@ -105,22 +108,27 @@
 
         onOnline(...args) {
             this.emit('online', ...args);
+            return this;
         }
 
         onMessage(...args) {
             this.emit('message', ...args);
+            return this;
         }
 
         onError(...args) {
             this.emit('error', ...args);
+            return this;
         }
 
         onExit(...args) {
             this.emit('exit', ...args);
+            return this;
         }
 
         onDisconnect(...args) {
             this.emit('disconnect', ...args);
+            return this;
         }
 
         bind() {
