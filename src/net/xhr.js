@@ -127,7 +127,7 @@
                     })
                     .on('close', () => {
                         const err = new HttpError('Http request closed');
-                        reject(errr);
+                        reject(err);
                     })
                     .on('response', response => {
                         const code = response.statusCode;
