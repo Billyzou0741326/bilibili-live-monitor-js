@@ -18,9 +18,9 @@
         }
 
         bind() {
-            this.guardHandler = this.guardHandler.bind(this);
-            this.giftHandler = this.giftHandler.bind(this);
-            this.pkHandler = this.pkHandler.bind(this);
+            this.guardHandler = this.handler.bind(this, 'guard');
+            this.giftHandler = this.handler.bind(this, 'gift');
+            this.pkHandler = this.handler.bind(this, 'pk');
             this.setCors = this.setCors.bind(this);
         }
 
@@ -45,26 +45,8 @@
             next();
         }
 
-        giftHandler(request, response) {
-            const gifts = this.history.get('gift');
-            response.set({
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            });
-            response.jsonp(gifts);
-        }
-
-        guardHandler(request, response) {
-            const guards = this.history.get('guard');
-            response.set({
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            });
-            response.jsonp(guards);
-        }
-
-        pkHandler(request, response) {
-            const gifts = this.history.get('pk');
+        handler(type, request, response) {
+            const gifts = this.history.get(type);
             response.set({
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*',
