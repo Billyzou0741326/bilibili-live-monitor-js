@@ -20,6 +20,7 @@
         bind() {
             this.guardHandler = this.guardHandler.bind(this);
             this.giftHandler = this.giftHandler.bind(this);
+            this.pkHandler = this.pkHandler.bind(this);
             this.setCors = this.setCors.bind(this);
         }
 
@@ -28,6 +29,7 @@
                 this.router.use('/', this.setCors);
                 this.router.get('/guard', this.guardHandler);
                 this.router.get('/gift', this.giftHandler);
+                this.router.get('/pk', this.pkHandler);
                 this.started = true;
             }
         }
@@ -59,6 +61,15 @@
                 'Access-Control-Allow-Origin': '*',
             });
             response.jsonp(guards);
+        }
+
+        pkHandler(request, response) {
+            const gifts = this.history.get('pk');
+            response.set({
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            });
+            response.jsonp(gifts);
         }
     }
 
