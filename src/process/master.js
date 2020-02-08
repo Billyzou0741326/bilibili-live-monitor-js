@@ -76,6 +76,10 @@
             }
         }
 
+        stop() {
+            return this.db.stop();
+        }
+
         onExit(worker, code, signal) {
             const id = super.onExit(worker, code, signal);
             if (this.running === true) {

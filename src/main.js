@@ -56,6 +56,24 @@
             const httpHost = new HttpHost(master.history);
             httpHost.run();
 
+            if (process.platform === "win32") {
+                require("readline").createInterface({
+                    input: process.stdin,
+                    output: process.stdout
+                }).on("SIGINT", () => {
+                    process.emit("SIGINT");
+                });
+            }
+
+            process.on("SIGINT", () => {
+                cprint('SIGINT received, shutting down...', colors.yellow);
+                master.stop().then(
+                    () => {
+                        cprint('Graceful shutdown sequence executed, now exits.', colors.yellow);
+                        process.exit()
+                    }
+                );
+            });
 
             // On any of the following event, push to clients
             (master
