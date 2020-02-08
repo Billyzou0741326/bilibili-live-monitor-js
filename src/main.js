@@ -70,7 +70,7 @@
                 master.stop().then(
                     () => {
                         cprint('Graceful shutdown sequence executed, now exits.', colors.yellow);
-                        process.exit()
+                        process.exit();
                     }
                 );
             });
