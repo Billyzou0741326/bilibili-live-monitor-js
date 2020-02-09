@@ -44,7 +44,10 @@
                     this.updateTask = null;
                 }
                 this.running = false;
+                return this.update().catch(this.handleError);
             }
+
+            return Promise.resolve();
         }
 
         setup() {
@@ -63,37 +66,38 @@
         }
 
         update() {
-            (this.readFile()
+            return this.readFile()
                 .then(this.updateLocal)
                 .then(this.filterRooms)
                 .catch(this.handleError)
-                .then(this.saveToFile));
+                .then(this.saveToFile);
         }
 
         saveToFile() {
+            cprint('Database: saving fixed room info...', colors.yellow);
             const data = JSON.stringify(this.roomInfo, null, 4);
-            fs.writeFile(this.name, data, error => {
-                if (error) {
-                    cprint(`Error(database): ${error.message}`, colors.red);
-                }
+            return new Promise((resolve, reject) => {
+                fs.writeFile(this.name, data, (error) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        cprint('Database: fixed room info saved.', colors.yellow);
+                        resolve();
+                    }
+                })
             });
         }
 
         readFile() {
-            const readFileCallback = (resolve, reject) => {
-                return (error, data) => {
-                    if (error)
+            return new Promise((resolve, reject) => {
+                fs.readFile(this.name, 'utf8', (error, data) => {
+                    if (error) {
                         reject(error);
-                    else
+                    } else {
                         resolve(data);
-                };
-            };
-
-            return (() => {
-                return new Promise((resolve, reject) => {
-                    fs.readFile(this.name, 'utf8', readFileCallback(resolve, reject));
-                });
-            })();
+                    }
+                })
+            });
         }
 
         updateLocal(data) {
@@ -112,14 +116,14 @@
 
         filterRooms(data) {
 
-            const thirtyDays = 1000 * 60 * 60 * 24 * 30;
+            const threshold = new Date() - 1000 * 60 * 60 * 24 * 30; // Filter out rooms that are inactive for 30 days
             let roomInfo = {};
             let result = null;
 
             try {
                 roomInfo = JSON.parse(data);
                 result = Object.entries(roomInfo).filter((entry) => {
-                    return (new Date() - entry[1].updated_at < thirtyDays);
+                    return (entry[1].updated_at > threshold);
                 }).map((entry) => {
                     return (Number.parseInt(entry[0]));
                 });
@@ -161,4 +165,3 @@
     module.exports = Database;
 
 })();
-
