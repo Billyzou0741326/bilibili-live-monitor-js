@@ -16,5 +16,15 @@
     "httpServer": {
         "ip": "0.0.0.0",
         "port": 9001
+    },
+    "bilibiliIPTracker": {
+        "trackIPs": true,
+        "dnsFailureRetries": 3,
+        "dnsFailureRetryDelay": 5,
+        "staticUpdateInterval": 60,
+        "dynamicUpdateThreashold": 100,
+        "unreliableHostThreashold": 5,
+        "unusableNetworkThreshold": 0,
+        "exitWhenNetworkUnusable": false
     }
 }

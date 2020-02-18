@@ -37,7 +37,7 @@
  3. `node ./src/main.js`             (正常运行)
  4. `node ./src/main.js -v`          (显示获取到x个动态房间)
  5. `node ./src/main.js --debug`     (显示对debug有帮助的信息(自认为) !刷屏警告)
- 6. 运行后可以进浏览器<http://127.0.0.1:9001/guard>查看可领取范围内的舰长, <http://127.0.0.1:9001/gift>查看可领取范围内的抽奖, <http://127.0.0.1:9001/pk>查看可领取范围内的大乱斗奖励 (可能要等会)
+ 6. 运行后可以进浏览器<http://{ip}:9001/guard>查看可领取范围内的大航海奖励, <http://{ip}:9001/gift>查看可领取范围内的抽奖 (可能要等会), <http://{ip}:9001/pk>查看可领取范围内的大乱斗奖励
 
 ### 运行方式 (3) - 不会用命令行可以用这种方法
  1. 右键`run.ps1`, 用powershell运行
@@ -47,12 +47,32 @@
 ```javascript
 {
     "wsServer": {
-        "ip": "127.0.0.1",      // 本地localhost推送；0.0.0.0可与外网相连
-        "port": 8999            // 选个接口 (client配对)
+        "self": {
+            "ip": "127.0.0.1",              // 本地localhost推送；0.0.0.0可与外网相连
+            "port": 8999                    // 选个接口 (client配对)
+        },
+        "bilive": {                         // 兼容bilive_client的ws服务器
+            "ip": "127.0.0.1",              // 本地localhost推送；0.0.0.0可与外网相连
+            "port": 8998                    // 选个接口 (client配对)
+        },
+        "bilihelper": {                     // 还不支持
+            "ip": "127.0.0.1",
+            "port": 8997
+        }
     },
     "httpServer": {
-        "ip": "127.0.0.1",      // 同上
-        "port": 9001            // 换个别的也可以 (client配对)
+        "ip": "127.0.0.1",                  // 同上
+        "port": 9001                        // 换个别的也可以 (client配对)
+    },
+    "bilibiliIPTracker": {                  // 支持IP掉线检测和智能动态分配
+        "trackIPs": true,                   // 使用或禁用本功能
+        "dnsFailureRetries": 3,             // DNS解析错误时重试次数
+        "dnsFailureRetryDelay": 5,          // DNS解析错误时重试延时，默认5秒
+        "staticUpdateInterval": 60,         // 静态更新掉线统计间隔时长，默认60秒
+        "dynamicUpdateThreashold": 100,     // 动态更新掉线统计阈值。总掉线数达到此值将触发IP重新分配
+        "unreliableHostThreashold": 5,      // 可用IP掉线偏差阈值。每次更新时IP掉线数相较于最好的IP在偏差范围内的可被分配。数字越大得到的好IP越多，连接数越平均
+        "unusableNetworkThreshold": 0,      // 网络可用判定最小掉线数阈值。每次更新时如果最好的IP掉线数仍旧达到此值将视为当前网络不可用。默认值为0，不进行检测
+        "exitWhenNetworkUnusable": false    // 检测到网络不可用时是否退出运行。只有在unusableNetworkThreshold有设置的情况下生效
     }
 }
 ```
