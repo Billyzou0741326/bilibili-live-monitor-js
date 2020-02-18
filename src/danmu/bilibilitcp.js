@@ -38,7 +38,7 @@
 
             this.setMaxListeners(15);
 
-            this.host = wsUri.host;
+            this.host = wsUri.host.resolve();
             this.port = wsUri.port;
 
             this.roomid = roomid || 0;
@@ -94,7 +94,7 @@
         run() {
             this.reset();
             this.socket = net.createConnection({
-                'host': this.host, 
+                'host': this.host.address, 
                 'port': this.port,
             }).setKeepAlive(true); // .setNoDelay(true)
             this.socket.on('connect', this.onConnect);
@@ -135,6 +135,7 @@
         onClose() {
             this.reset();
             if (this.closed_by_user === false) {
+                this.host.reportDisconnection();
                 this.run();
             } else {
                 this.emit('close');

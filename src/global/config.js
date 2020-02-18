@@ -4,9 +4,22 @@
 
     const settings = require('../settings.json');
     const EventEmitter = require('events').EventEmitter;
+    const HostResolver = require('../net/hostresolver.js');
+
+    const bilibiliServer = {
+        'host': 'broadcastlv.chat.bilibili.com',
+        'trackIPs': settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('trackIPs') ? settings.bilibiliIPTracker.trackIPs : true,
+        'dnsFailureRetries': settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('dnsFailureRetries') ? settings.bilibiliIPTracker.dnsFailureRetries : 3,
+        'dnsFailureRetryDelay': (settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('dnsFailureRetryDelay') ? settings.bilibiliIPTracker.dnsFailureRetryDelay : 5) * 1000,
+        'staticUpdateInterval': (settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('staticUpdateInterval') ? settings.bilibiliIPTracker.staticUpdateInterval : 60) * 1000,
+        'dynamicUpdateThreashold': settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('dynamicUpdateThreashold') ? settings.bilibiliIPTracker.dynamicUpdateThreashold : 100,
+        'unreliableHostThreashold': settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('unreliableHostThreashold') ? settings.bilibiliIPTracker.unreliableHostThreashold : 5,
+        'unusableNetworkThreshold': settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('unusableNetworkThreshold') ? settings.bilibiliIPTracker.unusableNetworkThreshold : 0,
+        'exitWhenNetworkUnusable': settings.bilibiliIPTracker && settings.bilibiliIPTracker.hasOwnProperty('exitWhenNetworkUnusable') ? settings.bilibiliIPTracker.exitWhenNetworkUnusable : false
+    };
 
     const wsUri = {
-        'host': 'broadcastlv.chat.bilibili.com',
+        'host': new HostResolver(bilibiliServer.host, bilibiliServer),
         'port': 2243,
     };
 
@@ -132,6 +145,7 @@
         FIXED,
         DYNAMIC_1,
         DYNAMIC_2,
+        bilibiliServer,
         wsUri,
         wsServer,
         httpServer,
